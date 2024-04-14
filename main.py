@@ -3,7 +3,6 @@ from typing import Union
 import config
 import group_data, sheets, json
 import imaginazer
-from group_data import WeekData, PairData
 
 ChatMessages:dict[str, Union[str, list, tuple]] = {
     "start": [
@@ -78,14 +77,21 @@ class UpdatedData():
         if self.studentsCount > 0:
             self.students = sheets.getRange(f"E3:E{2 + self.studentsCount}")[0]
 
-    def saveAll(self):
+        self.check()
+
+    def check(self):
         curWeek = datetime.datetime.now().isocalendar()[1]
         if self.groups_week != curWeek:
             self.groups_week = curWeek
             self.groups_data_cur = self.groups_data_next[:]
             self.groups_data_next = []
+            sheets.setRange("H2", [[str(curWeek)]])
 
-        sheets.setRange("H2", [[str(curWeek)]])
+        while len(self.groups) > len(self.groups_data_cur): self.groups_data_cur.append("")
+        while len(self.groups) > len(self.groups_data_next): self.groups_data_next.append("")
+
+    def saveAll(self):
+        self.check()
 
         sheets.setRange("A2", [[str(len(self.devs))]])
         sendDevs = self.devs[:]
@@ -198,6 +204,8 @@ def start(message: Message):
 def on_message(message: Message):
     global KeyboardButtons, updatedData
 
+    updatedData.check()
+
     userID = message.from_user.id
     isDev = getIsDev(userID)
     text = message.text
@@ -213,12 +221,16 @@ def on_message(message: Message):
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
-        if len(updatedData.groups_data_cur) < studentIndex or updatedData.groups_data_cur[studentIndex].count("[") < 10:
+        groupID = -1
+        groupName = json.loads(updatedData.students[studentIndex])[1]
+        if updatedData.groups.count(groupName) != 0:
+            groupID = updatedData.groups.index(groupName)
+        if groupID == -1 or updatedData.groups_data_next[studentIndex].count("[") < 10:
             bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
             return
         img = imaginazer.toImage(
             group_data.loadWeek(
-                updatedData.groups_data_cur[studentIndex]
+                updatedData.groups_data_cur[groupID]
             ),
             updatedData.pairs,
             updatedData.teachers
@@ -231,12 +243,16 @@ def on_message(message: Message):
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
-        if len(updatedData.groups_data_next) < studentIndex or updatedData.groups_data_next[studentIndex].count("[") < 10:
+        groupID = -1
+        groupName = json.loads(updatedData.students[studentIndex])[1]
+        if updatedData.groups.count(groupName) != 0:
+            groupID = updatedData.groups.index(groupName)
+        if groupID == -1 or updatedData.groups_data_next[studentIndex].count("[") < 10:
             bot.send_message(message.chat.id, f"Расписание на следующую неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
             return
         img = imaginazer.toImage(
             group_data.loadWeek(
-                updatedData.groups_data_next[studentIndex]
+                updatedData.groups_data_next[groupID]
             ),
             updatedData.pairs,
             updatedData.teachers
@@ -472,6 +488,9 @@ def on_webapp_msg(message):
         data[5], data[6], data[7]
     ]
     weekDataJson = group_data.saveWeek(weekData)
+
+    updatedData.check()
+
     if nextWeek:
         updatedData.groups_data_next[groupIndex] = weekDataJson
     else:
@@ -480,6 +499,9 @@ def on_webapp_msg(message):
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
 
+import traceback
 
-
-bot.polling(non_stop=True)
+try:
+    bot.polling(non_stop=True)
+except Exception:
+    print(traceback.format_exc(chain=True))
