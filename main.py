@@ -225,7 +225,7 @@ def on_message(message: Message):
         groupName = json.loads(updatedData.students[studentIndex])[1]
         if updatedData.groups.count(groupName) != 0:
             groupID = updatedData.groups.index(groupName)
-        if groupID == -1 or updatedData.groups_data_next[studentIndex].count("[") < 10:
+        if groupID == -1 or updatedData.groups_data_next[groupID].count("[") < 10:
             bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
             return
         img = imaginazer.toImage(
@@ -247,7 +247,7 @@ def on_message(message: Message):
         groupName = json.loads(updatedData.students[studentIndex])[1]
         if updatedData.groups.count(groupName) != 0:
             groupID = updatedData.groups.index(groupName)
-        if groupID == -1 or updatedData.groups_data_next[studentIndex].count("[") < 10:
+        if groupID == -1 or updatedData.groups_data_next[groupID].count("[") < 10:
             bot.send_message(message.chat.id, f"Расписание на следующую неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
             return
         img = imaginazer.toImage(
@@ -349,7 +349,7 @@ def on_message(message: Message):
 
 def dev_action(message: Message, isAdd:bool, isWhat:int, isToConfirm:bool, name:Union[str | None]):
     global updatedData
-    print(message.text, isAdd, isWhat, isToConfirm, name)
+    
     text = message.text
     userID = message.from_user.id
     if isToConfirm:

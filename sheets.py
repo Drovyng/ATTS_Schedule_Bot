@@ -66,14 +66,3 @@ def setRange(range_:str, values: list[list[str]]):
             ]
         }
     ).execute()
-
-
-import group_data
-
-
-def setGroupValue(index:int, value:group_data.WeekData):
-    setRange(f"K{index}", [[group_data.saveWeek(value)]])
-
-
-def getGroupValue(index:int) -> group_data.WeekData:
-    return group_data.loadWeek(getRange(f"K{index}")[0][0])
