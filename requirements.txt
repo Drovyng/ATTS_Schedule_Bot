@@ -10,3 +10,4 @@ rsa
 six
 uritemplate
 telebot
+pillow
