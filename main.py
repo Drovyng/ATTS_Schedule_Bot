@@ -459,14 +459,13 @@ def select_group(message: Message, groups: list[str]):
         start(message)
         return
 
-    if text == KeyboardButtons[4]:
-        if studentIndex == -1:
-            bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
-            return
+    if studentIndex == -1 and KeyboardButtons[4]:
+        bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
+    else:
         updatedData.students.pop(studentIndex)
         updatedData.saveAll()
-        bot.send_message(message.chat.id, f"Вы больше не подключены к группе [{group}]!", reply_markup=menu_keyboard(userID))
-        return
+        if text == KeyboardButtons[4]:
+            bot.send_message(message.chat.id, f"Вы больше не подключены к группе [{group}]!", reply_markup=menu_keyboard(userID))
 
     if text in groups:
         if group != text:

@@ -1,11 +1,9 @@
 import time
 
-scriptStr = ""
-
-with open("main.py", "r", encoding="UTF-8") as file:
-    scriptStr = file.read()
-
-
 while True:
-    exec(scriptStr)
+    import traceback
+    try:
+      import main
+    except Exception:
+      print(traceback.format_exc(chain=True))
     time.sleep(10)
