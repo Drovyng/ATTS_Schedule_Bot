@@ -28,7 +28,9 @@ KeyboardButtons:list[str] = [
     "Добавить Пару",
     "Удалить Пару",
     "Добавить Преподавателя",
-    "Удалить Преподавателя"
+    "Удалить Преподавателя",
+
+    "Перезагрузить бота 🔄"
 ]
 import datetime
 
@@ -313,9 +315,14 @@ def on_message(message: Message):
             KeyboardButton(KeyboardButtons[11]),
             KeyboardButton(KeyboardButtons[12])
         )
+        markup.row(
+            KeyboardButton(KeyboardButtons[13])
+        )
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
-    elif textIndex >= 7 and isDev:
+    elif textIndex == 13 and isDev:
+        raise Exception("Рестарт бота")
+    elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
         if not isAdd:
@@ -505,9 +512,4 @@ def on_webapp_msg(message):
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
 
-import traceback
-
-try:
-    bot.polling(non_stop=True)
-except Exception:
-    print(traceback.format_exc(chain=True))
+bot.polling(non_stop=True)
