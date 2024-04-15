@@ -79,9 +79,22 @@ class UpdatedData():
 
         self.check()
 
-    def check(self):
+    def save_groups(self):
+        sheets.setRange("D2", [[str(len(self.groups))]])
+        sendGroups = self.groups[:]
+        sendGroups_data_cur = self.groups_data_cur[:]
+        sendGroups_data_next = self.groups_data_next[:]
+        while len(sendGroups) < self.groupsCount: sendGroups.append("")
+        while len(sendGroups_data_cur) < self.groupsCount: sendGroups_data_cur.append("")
+        while len(sendGroups_data_next) < self.groupsCount: sendGroups_data_next.append("")
+        sheets.setRange(f"D3:D{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups])
+        sheets.setRange(f"H3:H{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups_data_cur])
+        sheets.setRange(f"I3:I{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups_data_next])
+
+    def check(self, issaving:bool = False):
         curWeek = datetime.datetime.now().isocalendar()[1]
-        if self.groups_week != curWeek:
+        go = self.groups_week != curWeek
+        if go:
             self.groups_week = curWeek
             self.groups_data_cur = self.groups_data_next[:]
             self.groups_data_next = []
@@ -90,8 +103,11 @@ class UpdatedData():
         while len(self.groups) > len(self.groups_data_cur): self.groups_data_cur.append("")
         while len(self.groups) > len(self.groups_data_next): self.groups_data_next.append("")
 
+        if not issaving and go:
+            self.save_groups()
+
     def saveAll(self):
-        self.check()
+        self.check(True)
 
         sheets.setRange("A2", [[str(len(self.devs))]])
         sendDevs = self.devs[:]
@@ -111,16 +127,7 @@ class UpdatedData():
         sheets.setRange(f"C3:C{2 + max(self.pairsCount, len(sendPairs))}", [sendPairs])
 
 
-        sheets.setRange("D2", [[str(len(self.groups))]])
-        sendGroups = self.groups[:]
-        sendGroups_data_cur = self.groups_data_cur[:]
-        sendGroups_data_next = self.groups_data_next[:]
-        while len(sendGroups) < self.groupsCount: sendGroups.append("")
-        while len(sendGroups_data_cur) < self.groupsCount: sendGroups_data_cur.append("")
-        while len(sendGroups_data_next) < self.groupsCount: sendGroups_data_next.append("")
-        sheets.setRange(f"D3:D{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups])
-        sheets.setRange(f"H3:H{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups_data_cur])
-        sheets.setRange(f"I3:I{2 + max(self.groupsCount, len(sendGroups))}", [sendGroups_data_next])
+        self.save_groups()
 
 
         sheets.setRange("E2", [[str(len(self.students))]])
