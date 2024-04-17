@@ -1,3 +1,5 @@
+import pip
+
 from typing import Union
 
 import config
@@ -31,7 +33,8 @@ KeyboardButtons:list[str] = [
     "Удалить Преподавателя",
 
     "Перезагрузить бота 🔄",
-    "Обновить файл"
+    "Обновить файл",
+    "Консоль"
 ]
 
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3]]
@@ -314,10 +317,11 @@ def on_message(message: Message):
             KeyboardButton(KeyboardButtons[12])
         )
         markup.row(
-            KeyboardButton(KeyboardButtons[13])
+            KeyboardButton(KeyboardButtons[13]),
         )
         markup.row(
-            KeyboardButton(KeyboardButtons[14])
+            KeyboardButton(KeyboardButtons[14]),
+            KeyboardButton(KeyboardButtons[15])
         )
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
@@ -328,6 +332,10 @@ def on_message(message: Message):
     elif textIndex == 14 and isDev:
         bot.send_message(message.chat.id, f"Введите название файла")
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, True, 3, False, None)
+    elif textIndex == 15 and isDev:
+        img = imaginazer.getScreenshot()
+        img.seek(0)
+        bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(userID))
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
@@ -393,7 +401,8 @@ def get_pair_day(message: Message):
         return
     
     dayIndex = days.index(text)
-    curDay = group_data.loadWeek(updatedData.groups_data_cur[groupID])[dayIndex]
+    curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+    curDay: group_data.DayData = curWeek[dayIndex]
     
     img = imaginazer.toImageDay(
         curDay,
