@@ -9,9 +9,8 @@ cabinets.insert(0, "биб.")
 cabinets.insert(0, "сп.зал")
 
 def getScreenshot() -> BytesIO:
-    import pip
-    pip.main(["install", "pyautogui"])
     import pyautogui
+    output = BytesIO()
     pyautogui.screenshot().save(output, format='PNG')
     return output
 
@@ -93,7 +92,7 @@ def toImageDay(day:DayData, dayText:str, pairs:list[str], teachers:list[str]) ->
     s532 = int(532 * scale)
     s10 = int(10 * scale)
 
-    img = Image.new("RGB", (sizeX + offX * 2, sizeY + 500), (200, 200, 200))
+    img = Image.new("RGB", (sizeX + offX * 2, sizeY), (200, 200, 200))
     imgDraw = ImageDraw.Draw(img, "RGB")
     font = ImageFont.truetype("times.ttf", int(20 * scale))
 
