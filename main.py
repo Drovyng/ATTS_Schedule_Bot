@@ -30,7 +30,8 @@ KeyboardButtons:list[str] = [
     "Добавить Преподавателя",
     "Удалить Преподавателя",
 
-    "Перезагрузить бота 🔄"
+    "Перезагрузить бота 🔄",
+    "Обновить файл"
 ]
 import datetime
 
@@ -318,12 +319,18 @@ def on_message(message: Message):
         markup.row(
             KeyboardButton(KeyboardButtons[13])
         )
+        markup.row(
+            KeyboardButton(KeyboardButtons[14])
+        )
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
     elif textIndex == 13 and isDev:
         bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
                          reply_markup=menu_keyboard(message.from_user.id))
         raise Exception("BotRestartCommand")
+    elif textIndex == 14 and isDev:
+        bot.send_message(message.chat.id, f"Введите название файла")
+        bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, True, 3, False, None)
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
@@ -380,9 +387,12 @@ def dev_action(message: Message, isAdd:bool, isWhat:int, isToConfirm:bool, name:
                 elif isWhat == 1:
                     updatedData.pairs.append(name)
                     sendText = "а пара"
-                else:
+                elif isWhat == 2:
                     updatedData.teachers.append(name)
                     sendText = " преподаватель"
+                elif isWhat == 3:
+                    bot.send_message(message.chat.id, f"Пытаюсь обновить файл [{name}]...", reply_markup=menu_keyboard(userID))
+                    raise Exception(f"UpdateFile|{name}")
                 updatedData.saveAll()
                 bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!", reply_markup=menu_keyboard(userID))
             else:
@@ -403,7 +413,7 @@ def dev_action(message: Message, isAdd:bool, isWhat:int, isToConfirm:bool, name:
                         return
                     updatedData.pairs.remove(name)
                     sendText = "а пара"
-                else:
+                elif isWhat == 2:
                     if updatedData.teachers.count(name) == 0:
                         bot.send_message(message.chat.id, f"Преподавателя [{name}] не существует!",
                                          reply_markup=menu_keyboard(userID))
@@ -445,7 +455,7 @@ def dev_action(message: Message, isAdd:bool, isWhat:int, isToConfirm:bool, name:
                 bot.send_message(message.chat.id, f"Пара [{text}] уже существует!",
                                  reply_markup=menu_keyboard(userID))
                 return
-            elif updatedData.teachers.count(text) != 0:
+            elif isWhat == 2 and updatedData.teachers.count(text) != 0:
                 bot.send_message(message.chat.id, f"Преподаватель [{text}] уже существует!",
                                  reply_markup=menu_keyboard(userID))
                 return
