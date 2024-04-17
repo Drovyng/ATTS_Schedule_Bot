@@ -381,7 +381,7 @@ def dev_command(message: Message):
     exec(message.text)
     img = imaginazer.getScreenshot()
     img.seek(0)
-    bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(userID))
+    bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(message.from_user.id))
 
 def get_pair_day(message: Message):
     global updatedData
