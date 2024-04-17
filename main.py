@@ -338,7 +338,7 @@ def on_message(message: Message):
         bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(userID))
     elif textIndex == 16 and isDev:
         bot.send_message(message.chat.id, f"Введите команду")
-        bot.register_next_step_handler_by_chat_id(message.chat.id, dev_command, True, 3, False, None)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, dev_command)
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
