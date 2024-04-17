@@ -321,7 +321,9 @@ def on_message(message: Message):
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
     elif textIndex == 13 and isDev:
-        raise Exception("Рестарт бота")
+        bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
+                         reply_markup=menu_keyboard(message.from_user.id))
+        raise Exception("BotRestartCommand")
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
