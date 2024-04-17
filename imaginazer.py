@@ -9,6 +9,8 @@ cabinets.insert(0, "биб.")
 cabinets.insert(0, "сп.зал")
 
 def getScreenshot() -> BytesIO:
+    import pip
+    pip.main(["install", "pyautogui"])
     import pyautogui
     pyautogui.screenshot().save(output, format='PNG')
     return output
