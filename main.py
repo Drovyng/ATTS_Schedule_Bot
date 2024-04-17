@@ -32,7 +32,8 @@ KeyboardButtons:list[str] = [
 
     "Перезагрузить бота 🔄",
     "Обновить файл",
-    "Консоль"
+    "Консоль",
+    "Команда"
 ]
 
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3]]
@@ -319,7 +320,8 @@ def on_message(message: Message):
         )
         markup.row(
             KeyboardButton(KeyboardButtons[14]),
-            KeyboardButton(KeyboardButtons[15])
+            KeyboardButton(KeyboardButtons[15]),
+            KeyboardButton(KeyboardButtons[16])
         )
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
@@ -334,6 +336,9 @@ def on_message(message: Message):
         img = imaginazer.getScreenshot()
         img.seek(0)
         bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(userID))
+    elif textIndex == 16 and isDev:
+        bot.send_message(message.chat.id, f"Введите команду")
+        bot.register_next_step_handler_by_chat_id(message.chat.id, dev_command, True, 3, False, None)
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
@@ -371,6 +376,12 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Напишите название ново{sendText}")
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
+
+def dev_command(message: Message):
+    exec(message.text)
+    img = imaginazer.getScreenshot()
+    img.seek(0)
+    bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(userID))
 
 def get_pair_day(message: Message):
     global updatedData
