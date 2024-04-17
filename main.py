@@ -1,5 +1,3 @@
-import pip
-
 from typing import Union
 
 import config
