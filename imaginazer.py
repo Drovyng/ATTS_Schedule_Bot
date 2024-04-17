@@ -8,11 +8,12 @@ cabinets = [str(i) for i in range(1, 26)]
 cabinets.insert(0, "биб.")
 cabinets.insert(0, "сп.зал")
 
+def getScreenshot() -> BytesIO:
+    import pyautogui
+    pyautogui.screenshot().save(output, format='PNG')
+    return output
 
 def toImage(week:WeekData, pairs:list[str], teachers:list[str]) -> BytesIO:
-    
-    import pip
-    pip.main(['install', "pyautogui"])
     
     global days
 
