@@ -33,6 +33,10 @@ KeyboardButtons:list[str] = [
     "Перезагрузить бота 🔄",
     "Обновить файл"
 ]
+
+days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3]]
+
+
 import datetime
 
 class UpdatedData():
@@ -250,25 +254,18 @@ def on_message(message: Message):
 
     elif textIndex == 6:
         studentIndex = findStudentIndex(userID)
+        
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        
+        markup.add(*days)
+        studentIndex = findStudentIndex(userID)
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
-        groupID = -1
-        groupName = json.loads(updatedData.students[studentIndex])[1]
-        if updatedData.groups.count(groupName) != 0:
-            groupID = updatedData.groups.index(groupName)
-        if groupID == -1 or updatedData.groups_data_next[groupID].count("[") < 10:
-            bot.send_message(message.chat.id, f"Расписание на следующую неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
-            return
-        img = imaginazer.toImage(
-            group_data.loadWeek(
-                updatedData.groups_data_next[groupID]
-            ),
-            updatedData.pairs,
-            updatedData.teachers
-        )
-        img.seek(0)
-        bot.send_photo(message.chat.id, img, "Вот пары на следующую неделю", reply_markup=menu_keyboard(userID))
+        
+        bot.send_message(message.chat.id, f"На какой день вы хотите узнать расписание?", reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, get_pair_day)
+        
 
     elif textIndex == 0:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -369,6 +366,47 @@ def on_message(message: Message):
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
 
+def get_pair_day(message: Message):
+    global updatedData
+    
+    text = message.text
+    userID = message.from_user.id
+    
+    if text == KeyboardButtons[3]:
+        start(message)
+        return
+    
+    studentIndex = findStudentIndex(userID)
+    if studentIndex == -1:
+        bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
+        return
+    groupID = -1
+    groupName = json.loads(updatedData.students[studentIndex])[1]
+    if updatedData.groups.count(groupName) != 0:
+        groupID = updatedData.groups.index(groupName)
+    if groupID == -1 or updatedData.groups_data_cur[groupID].count("[") < 10:
+        bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!", reply_markup=menu_keyboard(userID))
+        return
+    
+    if days.count(text) == 0:
+        bot.send_message(message.chat.id, f"Неизвестный день!", reply_markup=menu_keyboard(userID))
+        return
+    
+    dayIndex = days.index(text)
+    curDay = group_data.loadWeek(updatedData.groups_data_cur[groupID])[dayIndex]
+    
+    img = imaginazer.toImageDay(
+        curDay,
+        text,
+        updatedData.pairs,
+        updatedData.teachers
+    )
+    img.seek(0)
+    bot.send_photo(message.chat.id, img, f"Вот пары на {text}", reply_markup=menu_keyboard(userID))
+    
+    
+    
+    
 
 def dev_action(message: Message, isAdd:bool, isWhat:int, isToConfirm:bool, name:Union[str | None]):
     global updatedData
