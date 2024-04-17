@@ -10,6 +10,10 @@ cabinets.insert(0, "сп.зал")
 
 
 def toImage(week:WeekData, pairs:list[str], teachers:list[str]) -> BytesIO:
+    
+    import pip
+    pip.main(['install', "pyautogui"])
+    
     global days
 
     scale = 32.0 / 20.0
