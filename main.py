@@ -525,16 +525,16 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             set_notify_data(notifyData)
             updatedData.saveAll()
             bot.send_message(message.chat.id, f"Вы успешно включили уведомления [{punkt}]!", reply_markup=menu_keyboard(userID))
-    
+
     elif layer == 2:
         punkt = NotifyButtons[curSelected]
         if text in NotifyButtonsTimes:
             timeIndex = NotifyButtonsTimes.index(text)
             x1, x2, x3, x4 = notifyData
             if curSelected == 0:
-                x1 = timeIndex
-            else:
                 x2 = timeIndex
+            else:
+                x3 = timeIndex
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
             updatedData.saveAll()
