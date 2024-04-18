@@ -517,28 +517,36 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
         toggleOn = (not punktToggled and text == NotifyButtonsSelect[1])
         if (punktToggled and text == NotifyButtonsSelect[0]) or (toggleOn and curSelected != 2):
             btns = NotifyButtonsTimes[:]
-            bot.send_message(message.chat.id, f"Выберите время для присылания уведомления [{punkt}]:", reply_markup=btnsMarkup(btns))
+            bot.send_message(message.chat.id, f"Выберите время для присылания уведомление [{punkt}]:", reply_markup=btnsMarkup(btns))
             bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 2, curSelected)
         elif toggleOn and curSelected == 2:
             x1, x2, x3, x4 = notifyData
             notifyData = x1, x2, x3, True
             set_notify_data(notifyData)
             updatedData.saveAll()
-            bot.send_message(message.chat.id, f"Вы успешно включили уведомления [{punkt}]!", reply_markup=menu_keyboard(userID))
+            bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}]!", reply_markup=menu_keyboard(userID))
+        elif text == NotifyButtonsSelect[2]:
+            x1, x2, x3, x4 = notifyData
+            if curSelected == 0: x2 = False
+            elif curSelected == 1: x3 = False
+            elif curSelected == 3: x4 = False
+            notifyData = x1, x2, x3, x4
+            set_notify_data(notifyData)
+            updatedData.saveAll()
+            bot.send_message(message.chat.id, f"Вы успешно отключили уведомление [{punkt}]!",
+                             reply_markup=menu_keyboard(userID))
 
     elif layer == 2:
         punkt = NotifyButtons[curSelected]
         if text in NotifyButtonsTimes:
             timeIndex = NotifyButtonsTimes.index(text)
             x1, x2, x3, x4 = notifyData
-            if curSelected == 0:
-                x2 = timeIndex
-            else:
-                x3 = timeIndex
+            if curSelected == 0: x2 = timeIndex
+            elif curSelected == 1: x3 = timeIndex
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
             updatedData.saveAll()
-            bot.send_message(message.chat.id, f"Вы успешно включили уведомления [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
+            bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
 
 
 
