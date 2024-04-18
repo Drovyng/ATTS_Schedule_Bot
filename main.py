@@ -62,6 +62,17 @@ NotifyButtonsTimes: list[str] = [
     "7:00",
     KeyboardButtons[3]
 ]
+NotifyButtonsTimesInt: list[int] = [
+    15,
+    18,
+    19,
+    20,
+    22,
+    4,
+    5,
+    6,
+    7
+]
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
@@ -775,8 +786,73 @@ def on_webapp_msg(message):
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
 
 
-bot.polling(non_stop=True)
 
-print("Yey")
-print("It works")
-print("If I Can See This Text")
+import threading, time, os
+
+
+def thread_check_time(updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
+    time.sleep(20)
+    while True:
+        nowTime = datetime.datetime.now().hour
+        lastTime = 0
+        if os.path.exists("lastHour"):
+            with open("lastHour", "r") as file:
+                lastTime = int(file.read())
+
+        if lastTime != nowTime:
+            curDay = datetime.datetime.now().isocalendar().weekday
+            for notify in updatedData.notifies:
+                parsed = json.loads(notify)
+                x1, x2, x3, x4 = parsed
+
+                groupID = findStudentIndex(x1)
+                if groupID == -1:
+                    continue
+
+                if x2 in hoursList and hoursList.index(x2) == nowTime:
+                    try:
+                        dayIndex = curDay
+                        text = "завтра"
+                        if x2 >= 0:
+                            dayIndex -= 1
+                            text = "сегодня"
+                        if dayIndex < 6:
+                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                            curDay: group_data.DayData = curWeek[dayIndex]
+
+                            img = imaginazer.toImageDay(
+                                curDay,
+                                days[dayIndex],
+                                updatedData.pairs,
+                                updatedData.teachers
+                            )
+                            img.seek(0)
+                            bot.send_photo(x1, img, f"Вот пары на {text}")
+                    except Exception:
+                        pass
+                if x3 in hoursList and hoursList.index(x3) == nowTime and curDay == 7:
+                    try:
+                        if updatedData.groups_data_next[groupID].count("[") < 10:
+                            bot.send_message(x1, f"Извините, но расписание на следующую неделю ещё недоступно :(")
+                            continue
+                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+
+                        img = imaginazer.toImage(
+                            curWeek,
+                            updatedData.pairs,
+                            updatedData.teachers
+                        )
+                        img.seek(0)
+                        bot.send_photo(x1, img, f"Вот пары на следующую неделю")
+                    except Exception:
+                        pass
+
+            with open("lastHour", "w") as file:
+                file.write(str(nowTime))
+        time.sleep(600)                 # 10 minutes
+
+
+
+threading.Thread(target=thread_check_time, args=(updatedData, NotifyButtonsTimesInt, days)).start()
+
+bot.polling(non_stop=True)
