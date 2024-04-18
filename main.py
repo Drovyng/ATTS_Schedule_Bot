@@ -540,6 +540,8 @@ def select_group(message: Message, groups: list[str]):
     userID = message.from_user.id
     studentIndex = findStudentIndex(userID)
     group = ""
+    changed = False
+    
     if studentIndex != -1:
         group = json.loads(updatedData.students[studentIndex])[1]
 
@@ -547,21 +549,24 @@ def select_group(message: Message, groups: list[str]):
         start(message)
         return
 
-    if studentIndex == -1 and text == KeyboardButtons[4]:
-        bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
-    else:
-        updatedData.students.pop(studentIndex)
-        updatedData.saveAll()
-        if text == KeyboardButtons[4]:
+    if text == KeyboardButtons[4]:
+        if studentIndex == -1:
+            bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
+        else:
+            updatedData.students.pop(studentIndex)
             bot.send_message(message.chat.id, f"Вы больше не подключены к группе [{group}]!", reply_markup=menu_keyboard(userID))
+            updatedData.saveAll()
+        return
 
     if text in groups:
         if group != text:
+            if studentIndex != -1:
+                updatedData.students.pop(studentIndex)
             updatedData.students.append(json.dumps([userID, text], ensure_ascii=False))
             updatedData.saveAll()
             bot.send_message(message.chat.id, f"Вы подключены к группе [{text}]!", reply_markup=menu_keyboard(userID))
         else:
-            bot.send_message(message.chat.id, f"Вы уже подключены в группе [{text}]!", reply_markup=menu_keyboard(userID))
+            bot.send_message(message.chat.id, f"Вы уже подключены к группе [{text}]!", reply_markup=menu_keyboard(userID))
         return
 
     bot.send_message(message.chat.id, f"Неизвестный вариант ответа.", reply_markup=menu_keyboard(userID))
