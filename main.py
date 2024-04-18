@@ -428,12 +428,12 @@ def get_pair_day(message: Message):
     
     img = imaginazer.toImageDay(
         curDay,
-        text,
+        days[dayIndex],
         updatedData.pairs,
         updatedData.teachers
     )
     img.seek(0)
-    bot.send_photo(message.chat.id, img, f"Вот пары на {text}", reply_markup=menu_keyboard(userID))
+    bot.send_photo(message.chat.id, img, f"Вот пары на {text.lower()}", reply_markup=menu_keyboard(userID))
     
     
     
