@@ -81,6 +81,8 @@ import datetime
 
 class UpdatedData():
     def __init__(self):
+        self.turned_on = True
+
         self.devs: list[str] = []
         self.teachers: list[str] = []
         self.pairs: list[str] = []
@@ -399,8 +401,8 @@ def on_message(message: Message):
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
     elif textIndex == 13 and isDev:
-        bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
-                         reply_markup=menu_keyboard(message.from_user.id))
+        updatedData.turned_on = False 
+        bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",                          reply_markup=menu_keyboard(message.from_user.id))
         raise Exception("BotRestartCommand")
     elif textIndex == 14 and isDev:
         bot.send_message(message.chat.id, f"Введите название файла")
@@ -645,10 +647,9 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                 elif isWhat == 3:
                     bot.send_message(message.chat.id, f"Пытаюсь обновить файл [{name}]...",
                                      reply_markup=menu_keyboard(userID))
+
+                    updatedData.turned_on = False                    
                     raise Exception(f"UpdateFile|{name}")
-                updatedData.saveAll()
-                bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!",
-                                 reply_markup=menu_keyboard(userID))
             else:
                 if isWhat == 0:
                     if updatedData.groups.count(name) == 0:
@@ -792,7 +793,7 @@ import threading, time, os
 
 def thread_check_time(updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
     time.sleep(20)
-    while True:
+    while updatedData.turned_on:
         nowTime = datetime.datetime.now().hour
         lastTime = 0
         if os.path.exists("lastHour"):
