@@ -35,7 +35,8 @@ KeyboardButtons: list[str] = [
     "Консоль",
     "Команда",
 
-    "Уведомления 🔔"
+    "Уведомления 🔔",
+    "Назад ◀️"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -43,7 +44,25 @@ NotifyButtons: list[str] = [
     "Измен. расписания",
     KeyboardButtons[3]
 ]
-truefalseEmoji = ["❌", "✔️"]
+NotifyButtonsSelect: list[str] = [
+    "Изменить ✏️",
+    "Включить ✅",
+    "Выключить ❌",
+    KeyboardButtons[3]
+]
+NotifyButtonsTimes: list[str] = [
+    "15:00",
+    "18:00",
+    "19:00",
+    "20:00",
+    "22:00",
+    "4:00",
+    "5:00",
+    "6:00",
+    "7:00",
+    KeyboardButtons[3]
+]
+truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
 import datetime
@@ -231,6 +250,20 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
 
     return markup
 
+def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
+    lengrp = len(btns)
+    inrow = min(lengrp, maxLen)
+    rows = lengrp // inrow
+
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    b = 0
+    for i in range(rows):
+        inRow = []
+        for j in range(0, min(lengrp - inrow * i, inrow)):
+            inRow.append(KeyboardButton(btns[b]))
+            b += 1
+        markup.row(*inRow)
+    return markup
 
 @bot.message_handler(commands=['start', 'clear', 'menu'])
 def start(message: Message):
@@ -400,7 +433,7 @@ def on_message(message: Message):
             markup.row(*inRow)
 
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
-        bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
@@ -441,8 +474,18 @@ def on_message(message: Message):
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
 
 
-def notify_select(message: Message, notifyData):
+def set_notify_data(notifyData):
     global updatedData
+    userIndex = getUserNotifyIndex(notifyData[0])
+    jsoned = json.dumps(notifyData)
+    if userIndex == -1:
+        updatedData.notifies.append(jsoned)
+    else:
+        updatedData.notifies[userIndex] = jsoned
+
+
+def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int = 0):
+    global updatedData, NotifyButtons, KeyboardButtons, NotifyButtonsTimes, NotifyButtonsSelect
 
     text = message.text
     userID = message.from_user.id
@@ -450,6 +493,53 @@ def notify_select(message: Message, notifyData):
     if text == KeyboardButtons[3]:
         start(message)
         return
+
+    if layer == 0:
+        punkt = text[:-2]
+        if punkt in NotifyButtons:
+            punktIndex = NotifyButtons.index(punkt)
+            punktToggled = notifyData[punktIndex+1]
+            btns = []
+            if punktToggled:
+                if punktIndex != 2:
+                    btns.append(NotifyButtonsSelect[0])
+                btns.append(NotifyButtonsSelect[2])
+            else:
+                btns.append(NotifyButtonsSelect[1])     # Включить
+            btns.append(NotifyButtonsSelect[3])         # Назад
+
+            bot.send_message(message.chat.id, f"Открыты настройки пункта [{punkt}]:", reply_markup=btnsMarkup(btns))
+            bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 1, punktIndex)
+
+    elif layer == 1:
+        punkt = NotifyButtons[curSelected]
+        punktToggled = notifyData[curSelected+1]
+        toggleOn = (not punktToggled and text == NotifyButtonsSelect[1])
+        if (punktToggled and text == NotifyButtonsSelect[0]) or (toggleOn and curSelected != 2):
+            btns = NotifyButtonsTimes[:]
+            bot.send_message(message.chat.id, f"Выберите время для присылания уведомления [{punkt}]:", reply_markup=btnsMarkup(btns))
+            bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 2, curSelected)
+        elif toggleOn and curSelected == 2:
+            x1, x2, x3, x4 = notifyData
+            notifyData = x1, x2, x3, True
+            set_notify_data(notifyData)
+            updatedData.saveAll()
+            bot.send_message(message.chat.id, f"Вы успешно включили уведомления [{punkt}]!", reply_markup=menu_keyboard(userID))
+    
+    elif layer == 2:
+        punkt = NotifyButtons[curSelected]
+        if text in NotifyButtonsTimes:
+            timeIndex = NotifyButtonsTimes.index(text)
+            x1, x2, x3, x4 = notifyData
+            if curSelected == 0:
+                x1 = timeIndex
+            else:
+                x2 = timeIndex
+            notifyData = x1, x2, x3, x4
+            set_notify_data(notifyData)
+            updatedData.saveAll()
+            bot.send_message(message.chat.id, f"Вы успешно включили уведомления [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
+
 
 
 def dev_command(message: Message):
@@ -485,7 +575,7 @@ def get_pair_day(message: Message):
     if days.count(text) == 0:
         bot.send_message(message.chat.id, f"Неизвестный день!", reply_markup=menu_keyboard(userID))
         return
-    curDay = curWeek = datetime.datetime.now().isocalendar().weekday;
+    curDay = datetime.datetime.now().isocalendar().weekday;
     dayIndex = 0
     if text == "Сегодня":
         if curDay == 7:
