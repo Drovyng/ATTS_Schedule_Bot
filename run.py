@@ -26,3 +26,4 @@ except Exception as err:
   else:
     print(Fore.LIGHTRED_EX + Style.BRIGHT + traceback.format_exc(chain=True))
 time.sleep(4)
+quit()
