@@ -389,15 +389,15 @@ def on_message(message: Message):
 
         btns.append(NotifyButtons[-1])
 
-        lengrp = len(strList)
-        inrow = min(lengrp, 5)
+        lengrp = len(btns)
+        inrow = min(lengrp, 2)
         rows = lengrp // inrow
 
         b = 0
         for i in range(rows):
             inRow = []
             for j in range(0, min(lengrp - inrow * i, inrow)):
-                inRow.append(KeyboardButton(strList[b]))
+                inRow.append(KeyboardButton(btns[b]))
                 b += 1
             markup.row(*inRow)
             
