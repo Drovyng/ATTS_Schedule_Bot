@@ -36,7 +36,7 @@ KeyboardButtons:list[str] = [
     "Команда"
 ]
 
-days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3]]
+days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
 
 import datetime
@@ -408,8 +408,21 @@ def get_pair_day(message: Message):
     if days.count(text) == 0:
         bot.send_message(message.chat.id, f"Неизвестный день!", reply_markup=menu_keyboard(userID))
         return
-    
-    dayIndex = days.index(text)
+    curDay = curWeek = datetime.datetime.now().isocalendar().weekday;
+    dayIndex = 0
+    if text == "Сегодня":
+        if curDay == 7:
+            bot.send_message(message.chat.id, f"Недоступный день!", reply_markup=menu_keyboard(userID))
+            return
+        dayIndex = curDay
+    elif text == "Завтра":
+        if curDay >= 6:
+            bot.send_message(message.chat.id, f"Недоступный день!", reply_markup=menu_keyboard(userID))
+            return
+        dayIndex = curDay + 1
+    else:
+        dayIndex = days.index(text)
+        
     curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
     curDay: group_data.DayData = curWeek[dayIndex]
     
