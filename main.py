@@ -225,8 +225,11 @@ def menu_keyboard(userID:int) -> ReplyKeyboardMarkup:
 
     if isInGroup:
         markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]), KeyboardButton(KeyboardButtons[0]))
+        markup.row(KeyboardButton(KeyboardButtons[17]))
     else:
         markup.row(KeyboardButton(KeyboardButtons[0]))
+
+    
 
     if isDev:
         markup.row(KeyboardButton(KeyboardButtons[1]))
@@ -381,7 +384,7 @@ def on_message(message: Message):
             isTrue = 0
             if notifyData[i+1] != False:
                 isTrue = 1
-            btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
+            btns.append(KeyboardButton(NotifyButtons[i] + " " + truefalseEmoji[isTrue]))
             
         markup.row(*btns)
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
