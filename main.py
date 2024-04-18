@@ -776,3 +776,7 @@ def on_webapp_msg(message):
 
 
 bot.polling(non_stop=True)
+
+print("Yey")
+print("It works")
+print("If I Can See This Text")
