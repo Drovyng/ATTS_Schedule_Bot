@@ -33,9 +33,16 @@ KeyboardButtons:list[str] = [
     "Перезагрузить бота 🔄",
     "Обновить файл",
     "Консоль",
-    "Команда"
-]
+    "Команда",
 
+    "Уведомления 🔔"
+]
+NotifyButtons:list[str] = [
+    "На след. день",
+    "На след. неделю",
+    "Изменение расписания"
+]
+truefalseEmoji = ["❌", "✔️"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
 
@@ -51,6 +58,8 @@ class UpdatedData():
         self.groups_data_cur:list[str] = []
         self.groups_data_next:list[str] = []
         self.groups_week:int = 0
+        
+        self.notifies:list[str] = []
 
         self.resize()
 
@@ -63,6 +72,7 @@ class UpdatedData():
         self.pairsCount = len(self.pairs)
         self.groupsCount = len(self.groups)
         self.studentsCount = len(self.students)
+        self.notifiesCount = len(self.notifies)
 
     def reloadAll(self):
         self.devsCount = int(sheets.getRange("A2")[0][0])
@@ -86,6 +96,10 @@ class UpdatedData():
         if self.studentsCount > 0:
             self.students = sheets.getRange(f"E3:E{2 + self.studentsCount}")[0]
 
+        self.notifiesCount = int(sheets.getRange("F2")[0][0])
+        if self.notifiesCount > 0:
+            self.notifies = sheets.getRange(f"F3:F{2 + self.notifiesCount}")[0]
+        
         self.check()
 
     def save_groups(self):
@@ -144,6 +158,12 @@ class UpdatedData():
         while len(sendStudents) < self.studentsCount: sendStudents.append("")
         sheets.setRange(f"E3:E{2 + max(self.studentsCount, len(sendStudents))}", [sendStudents])
 
+
+        sheets.setRange("F2", [[str(len(self.notifies))]])
+        sendNotifies = self.notifies[:]
+        while len(sendNotifies) < self.notifiesCount: sendNotifies.append("")
+        sheets.setRange(f"F3:F{2 + max(self.notifiesCount, len(sendNotifies))}", [sendNotifies])
+
         self.resize()
 
 
@@ -187,6 +207,14 @@ def getIsDev(userID:int) -> bool:
     global updatedData
     return userID in updatedData.devs or userID in developers
 
+def getUserNotifyIndex(userID:int) -> int:
+    global updatedData
+    i = 0
+    for st in updatedData.notifies:
+        if json.loads(st)[0] == userID:
+            return i
+        i += 1
+    return -1
 
 def menu_keyboard(userID:int) -> ReplyKeyboardMarkup:
     global developers, updatedData
@@ -205,8 +233,7 @@ def menu_keyboard(userID:int) -> ReplyKeyboardMarkup:
 
     return markup
 
-
-@bot.message_handler(commands=['start', 'clear'])
+@bot.message_handler(commands=['start', 'clear', 'menu'])
 def start(message: Message):
     global KeyboardButtons
 
@@ -339,6 +366,27 @@ def on_message(message: Message):
     elif textIndex == 16 and isDev:
         bot.send_message(message.chat.id, f"Введите команду")
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_command)
+    elif textIndex == 17:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+        notifyIndex = getUserNotifyIndex(userID)
+        notifyData = [userID, False, False, False]
+        
+        if notifyIndex != -1:
+            notifyData = json.loads(updatedData.notifies[notifyIndex])
+        
+        btns = []
+        
+        for i in range(len(NotifyButtons)):
+            isTrue = 0
+            if notifyData[i+1] != False:
+                isTrue = 1
+            btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
+            
+        markup.row(*btns)
+        bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData)
+        
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
@@ -376,6 +424,9 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Напишите название ново{sendText}")
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
+
+def notify_select(message: Message, notifyData):
+    pass
 
 def dev_command(message: Message):
     exec(message.text)
