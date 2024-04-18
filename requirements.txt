@@ -11,3 +11,5 @@ six
 uritemplate
 telebot
 pillow
+colorama
+requests
