@@ -813,7 +813,7 @@ def thread_check_time(updatedData: UpdatedData, hoursList: list[int], daysList: 
                     try:
                         dayIndex = curDay
                         text = "завтра"
-                        if x2 >= 0:
+                        if x2 <= 12:
                             dayIndex -= 1
                             text = "сегодня"
                         if dayIndex < 6:
