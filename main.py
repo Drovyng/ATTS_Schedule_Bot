@@ -414,12 +414,12 @@ def get_pair_day(message: Message):
         if curDay == 7:
             bot.send_message(message.chat.id, f"Недоступный день!", reply_markup=menu_keyboard(userID))
             return
-        dayIndex = curDay
+        dayIndex = curDay - 1
     elif text == "Завтра":
         if curDay >= 6:
             bot.send_message(message.chat.id, f"Недоступный день!", reply_markup=menu_keyboard(userID))
             return
-        dayIndex = curDay + 1
+        dayIndex = curDay
     else:
         dayIndex = days.index(text)
         
