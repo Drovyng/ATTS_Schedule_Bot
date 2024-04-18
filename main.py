@@ -40,7 +40,8 @@ KeyboardButtons:list[str] = [
 NotifyButtons:list[str] = [
     "На след. день",
     "На след. неделю",
-    "Изменение расписания"
+    "Измен. расписания",
+    KeyboardButtons[3]
 ]
 truefalseEmoji = ["❌", "✔️"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
@@ -384,9 +385,20 @@ def on_message(message: Message):
             isTrue = 0
             if notifyData[i+1] != False:
                 isTrue = 1
-            btns.append(KeyboardButton(NotifyButtons[i] + " " + truefalseEmoji[isTrue]))
+            btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
+
+        lengrp = len(btns)
+        inrow = min(lengrp, 2)
+        rows = lengrp // inrow
+
+        b = 0
+        for i in range(rows):
+            inRow = []
+            for j in range(0, min(lengrp - inrow * i, inrow)):
+                inRow.append(KeyboardButton(btns[b]))
+                b += 1
+            markup.row(*inRow)
             
-        markup.row(*btns)
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData)
         
