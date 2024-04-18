@@ -381,21 +381,23 @@ def on_message(message: Message):
         
         btns = []
         
-        for i in range(len(NotifyButtons)):
+        for i in range(len(NotifyButtons)-1):
             isTrue = 0
             if notifyData[i+1] != False:
                 isTrue = 1
             btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
 
-        lengrp = len(btns)
-        inrow = min(lengrp, 2)
+        btns.append(NotifyButtons[-1])
+
+        lengrp = len(strList)
+        inrow = min(lengrp, 5)
         rows = lengrp // inrow
 
         b = 0
         for i in range(rows):
             inRow = []
             for j in range(0, min(lengrp - inrow * i, inrow)):
-                inRow.append(KeyboardButton(btns[b]))
+                inRow.append(KeyboardButton(strList[b]))
                 b += 1
             markup.row(*inRow)
             
@@ -441,7 +443,14 @@ def on_message(message: Message):
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
 
 def notify_select(message: Message, notifyData):
-    pass
+    global updatedData
+    
+    text = message.text
+    userID = message.from_user.id
+    
+    if text == KeyboardButtons[3]:
+        start(message)
+        return
 
 def dev_command(message: Message):
     exec(message.text)
