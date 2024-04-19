@@ -790,13 +790,13 @@ def on_webapp_msg(message):
     if nextWeek:
         updatedData.groups_data_next[groupIndex] = weekDataJson
     else:
+        updatedData.groups_data_cur[groupIndex] = weekDataJson
+        
         for notify in updatedData.notifies:
             parsed = json.loads(notify)
             x1, x2, x3, x4 = parsed
-
-            if findStudentIndex(x1) == groupIndex:
-                if x4 == False:
-                    continue
+            
+            if findStudentIndex(x1) == groupIndex and x4 == True:
                 img = imaginazer.toImage(
                     weekData,
                     updatedData.pairs,
@@ -804,9 +804,7 @@ def on_webapp_msg(message):
                 )
                 img.seek(0)
                 bot.send_photo(x1, img, f"Пары на эту неделю были обновлены!")
-            
-            
-        updatedData.groups_data_cur[groupIndex] = weekDataJson
+                
     updatedData.saveAll()
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
