@@ -72,7 +72,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
             imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
             
             if j == 0:
-                imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, sizey), None, (100, 100, 100), width)
+                imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), None, (100, 100, 100), width)
 
         imgDraw.text((int(sizeX/2 - font.getlength(topText) / 2) + offX, s10 + offY), topText, (0, 0, 0), font=font)
 
