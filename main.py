@@ -430,7 +430,7 @@ def on_message(message: Message):
 
         for i in range(len(NotifyButtons) - 1):
             isTrue = 0
-            if notifyData[i + 1] != False:
+            if str(notifyData[i + 1]) != "False":
                 isTrue = 1
             btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
 
@@ -454,7 +454,7 @@ def on_message(message: Message):
     elif textIndex == 19:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         bot.send_message(message.chat.id, "Выберите режим:", reply_markup=markup)
-        bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
+        #bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
@@ -841,7 +841,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                     if groupID == -1:
                         continue
 
-                    if x2 in hoursList and hoursList.index(x2) == nowTime:
+                    if str(x2) != "False" and hoursList[x2] == nowTime:
                         try:
                             dayIndex = curDay
                             text = "завтра"
@@ -862,7 +862,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                                 bot.send_photo(x1, img, f"Вот пары на {text}")
                         except Exception:
                             pass
-                    if x3 in hoursList and hoursList.index(x3) == nowTime and curDay == 7:
+                    if str(x3) != "False" and hoursList[x3] == nowTime and curDay == 7:
                         try:
                             if updatedData.groups_data_next[groupID].count("[") < 10:
                                 bot.send_message(x1, f"Извините, но расписание на следующую неделю ещё недоступно :(")
