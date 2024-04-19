@@ -48,13 +48,6 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
     for i in range(6):
         day = week[i]
         offY = sizey / 4 + sizeY * i
-        imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
-
-        imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
-        imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
-        imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
-        imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
-        imgDraw.line((s500 + offX, s48 + offY, s500 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
 
         topText = days[i]
         if day[0] != -1:
@@ -72,6 +65,15 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
                 imgDraw.rectangle((s306 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), None, (200, 200, 200))
         
         imgDraw.text((int(sizeX/2 - font.getlength(topText) / 2) + offX, s10 + offY), topText, (0, 0, 0), font=font)
+        
+        
+        imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
+
+        imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
+        imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
+        imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
+        imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+        imgDraw.line((s500 + offX, s48 + offY, s500 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
 
     output = BytesIO()
     img.save(output, format='PNG')
