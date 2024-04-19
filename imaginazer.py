@@ -49,7 +49,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
         day = week[i]
         offY = sizey / 4 + sizeY * i
 
-        img = Image.new("RGB", (sizeX + offX * 2, sizeY*6), (200, 200, 200))
+        imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
 
         topText = days[i]
         if day[0] == -1:
@@ -71,7 +71,6 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
 
         imgDraw.text((int(sizeX/2 - font.getlength(topText) / 2) + offX, s10 + offY), topText, (0, 0, 0), font=font)
         
-        imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
         imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
         imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
         imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
@@ -111,6 +110,11 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
     img = Image.new("RGB", (sizeX + offX * 2, sizeY), (200, 200, 200))
     imgDraw = ImageDraw.Draw(img, "RGB")
     font = ImageFont.truetype("times.ttf", int(20 * scale))
+    
+    
+    imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), (100, 100, 100), width)
+    imgDraw.rectangle(None, (offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+
 
     offY = sizey / 4
 
@@ -128,13 +132,10 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
 
         
         if j == 0:
-            imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, sizey), None, (100, 100, 100), width)
+            imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), None, (100, 100, 100), width)
 
     imgDraw.text((int(sizeX/2 - font.getlength(dayText) / 2) + offX, s10 + offY), dayText, (0, 0, 0), font=font)
-
-    imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
-
-    imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
+    
     imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
     imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
     imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
