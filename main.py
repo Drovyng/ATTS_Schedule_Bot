@@ -228,6 +228,17 @@ def findStudentIndex(userID) -> int:
         i += 1
     return -1
 
+def findStudentGroup(userID) -> int:
+    global updatedData
+    i = 0
+    for st in updatedData.students:
+        parsed = json.loads(st)
+        if parsed[0] == userID:
+            if not parsed[1] in updatedData.groups: return -1
+            return updatedData.groups.index(parsed[1])
+        i += 1
+    return -1
+
 
 def getIsDev(userID: int) -> bool:
     global updatedData
@@ -796,7 +807,7 @@ def on_webapp_msg(message):
             parsed = json.loads(notify)
             x1, x2, x3, x4 = parsed
             
-            if findStudentIndex(x1) == groupIndex and x4 == True:
+            if findStudentGroup(x1) == groupIndex and x4 == True:
                 img = imaginazer.toImage(
                     weekData,
                     updatedData.pairs,
@@ -835,7 +846,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                     parsed = json.loads(notify)
                     x1, x2, x3, x4 = parsed
 
-                    groupID = findStudentIndex(x1)
+                    groupID = findStudentGroup(x1)
                     if groupID == -1:
                         continue
 
