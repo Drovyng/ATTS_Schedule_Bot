@@ -62,7 +62,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
             imgDraw.text((s306 + offX, s65 + sizey * j + offY), teachers[pair[1]], (0, 0, 0), font=font)
             imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
             if j == 0:
-                imgDraw.rectangle((s306 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), None, (200, 200, 200))
+                imgDraw.rectangle((s306 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
         
         imgDraw.text((int(sizeX/2 - font.getlength(topText) / 2) + offX, s10 + offY), topText, (0, 0, 0), font=font)
         
@@ -124,7 +124,7 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
         imgDraw.text((s306 + offX, s65 + sizey * j + offY), teachers[pair[1]], (0, 0, 0), font=font)
         imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
         if j == 0:
-            imgDraw.rectangle((s306 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), None, (200, 200, 200))
+            imgDraw.rectangle((s306 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
     
     imgDraw.text((int(sizeX/2 - font.getlength(dayText) / 2) + offX, s10 + offY), dayText, (0, 0, 0), font=font)
     
