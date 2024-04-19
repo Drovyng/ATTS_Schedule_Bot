@@ -5,6 +5,8 @@ from typing import Union
 PairData = tuple[int, int, int]
 DayData = tuple[int, PairData, PairData, PairData]
 WeekData = list[DayData]
+DayDataTeacher = tuple[PairData, PairData, PairData, PairData, PairData, PairData]
+WeekDataTeacher = list[DayDataTeacher]
 WeekDataWeb = tuple[int, int, DayData, DayData, DayData, DayData, DayData, DayData]
 
 

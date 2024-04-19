@@ -36,7 +36,8 @@ KeyboardButtons: list[str] = [
     "Команда",
 
     "Уведомления 🔔",
-    "Назад ◀️"
+    "Назад ◀️",
+    "Режим Работы ⚡️"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -73,11 +74,19 @@ NotifyButtonsTimesInt: list[int] = [
     6,
     7
 ]
+SelectGroupButtons = [
+    KeyboardButtons[4],
+    "⏪",
+    "⏩",
+    KeyboardButtons[3]
+]
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
-import datetime
+teacherGroup = "Преподаватель"
+modes = ["Студент 🙋🏻", "Преподаватель ⭐️"]
 
+import datetime
 
 class UpdatedData():
     def __init__(self):
@@ -91,6 +100,8 @@ class UpdatedData():
         self.groups_week: int = 0
 
         self.notifies: list[str] = []
+
+        self.onSaveAll = None
 
         self.resize()
 
@@ -192,8 +203,50 @@ class UpdatedData():
 
         self.resize()
 
+        self.onSaveAll()
+
 
 updatedData = UpdatedData()
+
+emptyTeacherDay: group_data.DayDataTeacher = [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1], [-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]
+
+
+teachersPairs: list[list[group_data.WeekDataTeacher]] = [[], []]
+
+def recalculateTeachersPairs(nextWeek: bool):
+    global updatedData, teachersPairs, emptyTeacherDay
+    nextWeekInt = 1 if nextWeek else 0
+    teachersPairs[nextWeekInt] = [[emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay] for i in updatedData.teachersCount]
+
+    toRead = updatedData.groups_data_cur if nextWeek else updatedData.groups_data_next
+
+    for i in range(updatedData.groupsCount):
+        data = toRead[i]
+        if data.count("[") < 10:
+            continue
+        parsed: group_data.WeekData = json.loads(data)
+
+        for d in range(len(parsed)):
+            day = parsed[d]
+            p = -1
+            for pair in [day[1], day[2], day[3]]:
+                p += 1
+                offset = p + day[0]
+                if offset >= 6:
+                    break
+                if pair[0] == -1:
+                    continue
+
+                teachersPairs[nextWeekInt][pair[1]][offset] = [pair[0], i, pair[2]]
+
+def recalculateTeachersPairsAll():
+    recalculateTeachersPairs(False)
+    recalculateTeachersPairs(True)
+
+
+updatedData.onSaveAll = recalculateTeachersPairsAll
+recalculateTeachersPairsAll()
+
 
 import telebot
 from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
@@ -218,6 +271,16 @@ def getChatMessage(key: str, isDev: bool = False):
         return msg
 
 
+def findStudent(userID) -> list:
+    global updatedData
+    i = 0
+    for st in updatedData.students:
+        parsed = json.loads(st)
+        if parsed[0] == userID:
+            return parsed
+        i += 1
+    return None
+
 def findStudentIndex(userID) -> int:
     global updatedData
     i = 0
@@ -226,6 +289,13 @@ def findStudentIndex(userID) -> int:
             return i
         i += 1
     return -1
+
+def findStudentGroup(userID) -> int:
+    global updatedData
+    student = findStudent()
+    if student == None or not student[1] in updatedData.groups:
+        return -1
+    return updatedData.groups.index(student[1])
 
 
 def getIsDev(userID: int) -> bool:
@@ -252,7 +322,7 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
     if isInGroup:
         markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]),
                    KeyboardButton(KeyboardButtons[0]))
-        markup.row(KeyboardButton(KeyboardButtons[17]))
+        markup.row(KeyboardButton(KeyboardButtons[19]), KeyboardButton(KeyboardButtons[17]))
     else:
         markup.row(KeyboardButton(KeyboardButtons[0]))
 
@@ -275,6 +345,15 @@ def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
             b += 1
         markup.row(*inRow)
     return markup
+
+
+def getGroupsList(course:int) -> list[str]:
+    btns = []
+    for grp in updatedData.groups:
+        courseYear = datetime.datetime.now().isocalendar()[0] - course
+        if grp.startswith(str(courseYear)[-2:]):
+            btns.append(grp)
+
 
 @bot.message_handler(commands=['start', 'clear', 'menu'])
 def start(message: Message):
@@ -342,35 +421,24 @@ def on_message(message: Message):
 
 
     elif textIndex == 0:
-        markup = ReplyKeyboardMarkup(resize_keyboard=True)
-
-        groups = updatedData.groups[:]
-        if not isDev and groups.count("Тест") > 0:
-            groups.remove("Тест")
-
-        groups.append(KeyboardButtons[3])
-        groups.append(KeyboardButtons[4])
-
-        lengrp = len(groups)
-        inrow = min(lengrp, 5)
-        rows = lengrp // inrow
-
-        b = 0
-        for i in range(rows):
-            inRow = []
-            for j in range(0, min(lengrp - inrow * i, inrow)):
-                inRow.append(KeyboardButton(groups[b]))
-                b += 1
-            markup.row(*inRow)
+        markup = btnsMarkup(getGroupsList(0), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, "1-й Курс")
+        btns[1] = truefalseEmoji[0]
+        markup.row(*btns)
 
         bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
-        bot.register_next_step_handler(message, select_group, groups)
+        bot.register_next_step_handler(message, select_group, 0)
 
     elif textIndex == 1 and isDev:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
+        urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, updatedData.groups_data_cur, updatedData.groups_data_next]
+        
+        
+
         url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
-        url += json.dumps([updatedData.pairs, updatedData.teachers, updatedData.groups], ensure_ascii=False).replace(
+        url += json.dumps(urlData, ensure_ascii=False).replace(
             "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
         url += "customdataend"
 
@@ -425,7 +493,7 @@ def on_message(message: Message):
 
         for i in range(len(NotifyButtons) - 1):
             isTrue = 0
-            if notifyData[i + 1] != False:
+            if str(notifyData[i + 1]) != "False":
                 isTrue = 1
             btns.append(NotifyButtons[i] + " " + truefalseEmoji[isTrue])
 
@@ -445,6 +513,11 @@ def on_message(message: Message):
 
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
+        
+    elif textIndex == 19:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        bot.send_message(message.chat.id, "Выберите режим:", reply_markup=markup)
+        #bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
@@ -719,7 +792,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, True, text)
 
 
-def select_group(message: Message, groups: list[str]):
+def select_group(message: Message, course:int):
     global KeyboardButtons, updatedData, developers
     text = message.text
     userID = message.from_user.id
@@ -730,11 +803,37 @@ def select_group(message: Message, groups: list[str]):
     if studentIndex != -1:
         group = json.loads(updatedData.students[studentIndex])[1]
 
-    if text == KeyboardButtons[3]:
+    if text == truefalseEmoji[0]:
+        bot.register_next_step_handler(message, select_group, updatedData.groups, course)
+        
+    if text == SelectGroupButtons[0]:
         start(message)
         return
+    if text == SelectGroupButtons[1]:
+        markup = btnsMarkup(getGroupsList(course-1), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, f"{course}-й Курс")
+        markup.row(*btns)
+        
+        if len(getGroupsList(course-1)) == 0:
+            btns[1] = truefalseEmoji[0]
 
-    if text == KeyboardButtons[4]:
+        bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_group, course-1)
+        return
+    if text == SelectGroupButtons[2]:
+        markup = btnsMarkup(getGroupsList(course+1), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, f"{course}-й Курс")
+        markup.row(*btns)
+        
+        if len(getGroupsList(course+2)) == 0:
+            btns[3] = truefalseEmoji[0]
+
+        bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_group, course+1)
+        return
+    if text == SelectGroupButtons[3]:
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
         else:
@@ -744,7 +843,7 @@ def select_group(message: Message, groups: list[str]):
             updatedData.saveAll()
         return
 
-    if text in groups:
+    if text in updatedData.groups:
         if group != text:
             if studentIndex != -1:
                 updatedData.students.pop(studentIndex)
@@ -781,6 +880,26 @@ def on_webapp_msg(message):
         updatedData.groups_data_next[groupIndex] = weekDataJson
     else:
         updatedData.groups_data_cur[groupIndex] = weekDataJson
+        
+        for notify in updatedData.notifies:
+            parsed = json.loads(notify)
+            x1, x2, x3, x4 = parsed
+            
+            studentGroup = findStudentGroup(x1)
+            
+            if studentGroup == groupIndex and x4 == True:
+                img = None
+                if studentGroup == teacherGroup:
+                    pass
+                else:
+                    img = imaginazer.toImage(
+                        weekData,
+                        updatedData.pairs,
+                        updatedData.teachers
+                    )
+                img.seek(0)
+                bot.send_photo(x1, img, f"⚠️ Пары на эту неделю были обновлены! ⚠️")
+                
     updatedData.saveAll()
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
@@ -788,71 +907,82 @@ def on_webapp_msg(message):
 
 
 import threading, time, os
+from run_saver import RunSaver
 
 
-def thread_check_time(updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
-    time.sleep(20)
-    while True:
-        nowTime = datetime.datetime.now().hour
-        lastTime = 0
-        if os.path.exists("lastHour"):
-            with open("lastHour", "r") as file:
-                lastTime = int(file.read())
+def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
+    time.sleep(5)
+    
+    i = 0
+    
+    while saver.running:
+        
+        if i == 0:
+            nowTime = datetime.datetime.now().hour
+            lastTime = 0
+            if os.path.exists("lastHour"):
+                with open("lastHour", "r") as file:
+                    lastTime = int(file.read())
 
-        if lastTime != nowTime:
-            curDay = datetime.datetime.now().isocalendar().weekday
-            for notify in updatedData.notifies:
-                parsed = json.loads(notify)
-                x1, x2, x3, x4 = parsed
+            if lastTime != nowTime:
+                curDay = datetime.datetime.now().isocalendar().weekday
+                for notify in updatedData.notifies:
+                    parsed = json.loads(notify)
+                    x1, x2, x3, x4 = parsed
 
-                groupID = findStudentIndex(x1)
-                if groupID == -1:
-                    continue
+                    groupID = findStudentGroup(x1)
+                    if groupID == -1:
+                        continue
 
-                if x2 in hoursList and hoursList.index(x2) == nowTime:
-                    try:
-                        dayIndex = curDay
-                        text = "завтра"
-                        if x2 >= 0:
-                            dayIndex -= 1
-                            text = "сегодня"
-                        if dayIndex < 6:
-                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                            curDay: group_data.DayData = curWeek[dayIndex]
+                    if str(x2) != "False" and hoursList[x2] == nowTime:
+                        try:
+                            dayIndex = curDay
+                            text = "завтра"
+                            if x2 <= 12:
+                                dayIndex -= 1
+                                text = "сегодня"
+                            if dayIndex < 6:
+                                curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                                curDay: group_data.DayData = curWeek[dayIndex]
 
-                            img = imaginazer.toImageDay(
-                                curDay,
-                                days[dayIndex],
+                                img = imaginazer.toImageDay(
+                                    curDay,
+                                    days[dayIndex],
+                                    updatedData.pairs,
+                                    updatedData.teachers
+                                )
+                                img.seek(0)
+                                bot.send_photo(x1, img, f"Вот пары на {text}")
+                        except Exception:
+                            pass
+                    if str(x3) != "False" and hoursList[x3] == nowTime and ((curDay == 7 and hoursList[x3] > 12) or (curDay == 1 and hoursList[x3] <= 12)):
+                        try:
+                            dayNextText = "следующую"
+                            if curDay == 1: dayNextText = "эту"
+                            if updatedData.groups_data_next[groupID].count("[") < 10:
+                                bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
+                                continue
+                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+
+                            img = imaginazer.toImage(
+                                curWeek,
                                 updatedData.pairs,
                                 updatedData.teachers
                             )
                             img.seek(0)
-                            bot.send_photo(x1, img, f"Вот пары на {text}")
-                    except Exception:
-                        pass
-                if x3 in hoursList and hoursList.index(x3) == nowTime and curDay == 7:
-                    try:
-                        if updatedData.groups_data_next[groupID].count("[") < 10:
-                            bot.send_message(x1, f"Извините, но расписание на следующую неделю ещё недоступно :(")
-                            continue
-                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+                            bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
+                        except Exception:
+                            pass
 
-                        img = imaginazer.toImage(
-                            curWeek,
-                            updatedData.pairs,
-                            updatedData.teachers
-                        )
-                        img.seek(0)
-                        bot.send_photo(x1, img, f"Вот пары на следующую неделю")
-                    except Exception:
-                        pass
-
-            with open("lastHour", "w") as file:
-                file.write(str(nowTime))
-        time.sleep(600)                 # 10 minutes
+                with open("lastHour", "w") as file:
+                    file.write(str(nowTime))
+        i += 1
+        i %= 300
+        time.sleep(2)                 # 10 minutes
 
 
+def run_bot(saver: RunSaver):
+    
+    threading.Thread(target=thread_check_time, args=(saver, updatedData, NotifyButtonsTimesInt, days)).start()
 
-threading.Thread(target=thread_check_time, args=(updatedData, NotifyButtonsTimesInt, days)).start()
-
-bot.polling(non_stop=True)
+    bot.polling(non_stop=True)

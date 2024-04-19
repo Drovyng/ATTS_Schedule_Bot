@@ -13,3 +13,4 @@ telebot
 pillow
 colorama
 requests
+fuzzywuzzy

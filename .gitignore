@@ -1,4 +1,5 @@
 .idea/
 __pycache__/
 website/
+venv/
 config.py
