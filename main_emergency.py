@@ -2,15 +2,10 @@ from io import BytesIO
 from colorama import init, Fore, Style
 init(autoreset=True)
 
-import telebot, config, pyautogui, traceback
+import telebot, config, pyautogui, traceback, config
 from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
 bot = telebot.TeleBot(config.bot_token)
-developers: list[int] = [
-    1157843932
-    #,  # Дмитрий
-#    1085752896  # Быленко М.И.
-]
 
 KeyboardButtons = [
     "Команда",
@@ -29,7 +24,7 @@ def getScreenshot() -> BytesIO:
     return output
 
 
-for dev in developers:
+for dev in config.developers:
     try:
         img = getScreenshot()
         img.seek(0)
@@ -44,8 +39,8 @@ for dev in developers:
 
 @bot.message_handler()
 def on_message(message: Message):
-    global developers, KeyboardButtons, markup
-    if not message.from_user.id in developers:
+    global KeyboardButtons, markup
+    if not message.from_user.id in config.developers:
         bot.send_message(message.chat.id, "⚠️Ведутся работы по исправлению ошибок! Бот в данный момент недоступен!⚠️")
     else:
         text = message.text

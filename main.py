@@ -252,10 +252,6 @@ import telebot
 from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
 bot = telebot.TeleBot(config.bot_token)
-developers: list[int] = [
-    1157843932,  # Дмитрий
-    1085752896  # Быленко М.И.
-]
 
 
 def getChatMessage(key: str, isDev: bool = False):
@@ -300,7 +296,7 @@ def findStudentGroup(userID) -> int:
 
 def getIsDev(userID: int) -> bool:
     global updatedData
-    return userID in updatedData.devs or userID in developers
+    return userID in updatedData.devs or userID in config.developers
 
 
 def getUserNotifyIndex(userID: int) -> int:
@@ -314,7 +310,7 @@ def getUserNotifyIndex(userID: int) -> int:
 
 
 def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
-    global developers, updatedData
+    global updatedData
     isInGroup = findStudentIndex(userID) != -1
     isDev = getIsDev(userID)
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -793,7 +789,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
 
 
 def select_group(message: Message, course:int):
-    global KeyboardButtons, updatedData, developers
+    global KeyboardButtons, updatedData
     text = message.text
     userID = message.from_user.id
     studentIndex = findStudentIndex(userID)
