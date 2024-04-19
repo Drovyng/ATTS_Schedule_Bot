@@ -81,8 +81,6 @@ import datetime
 
 class UpdatedData():
     def __init__(self):
-        self.turned_on = True
-
         self.devs: list[str] = []
         self.teachers: list[str] = []
         self.pairs: list[str] = []
@@ -401,8 +399,8 @@ def on_message(message: Message):
 
         bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
     elif textIndex == 13 and isDev:
-        updatedData.turned_on = False 
-        bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",                          reply_markup=menu_keyboard(message.from_user.id))
+        bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
+                         reply_markup=menu_keyboard(message.from_user.id))
         raise Exception("BotRestartCommand")
     elif textIndex == 14 and isDev:
         bot.send_message(message.chat.id, f"Введите название файла")
@@ -647,9 +645,10 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                 elif isWhat == 3:
                     bot.send_message(message.chat.id, f"Пытаюсь обновить файл [{name}]...",
                                      reply_markup=menu_keyboard(userID))
-
-                    updatedData.turned_on = False                    
                     raise Exception(f"UpdateFile|{name}")
+                updatedData.saveAll()
+                bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!",
+                                 reply_markup=menu_keyboard(userID))
             else:
                 if isWhat == 0:
                     if updatedData.groups.count(name) == 0:
@@ -789,71 +788,80 @@ def on_webapp_msg(message):
 
 
 import threading, time, os
+from run_saver import RunSaver
 
 
-def thread_check_time(updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
+def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
     time.sleep(20)
-    while updatedData.turned_on:
-        nowTime = datetime.datetime.now().hour
-        lastTime = 0
-        if os.path.exists("lastHour"):
-            with open("lastHour", "r") as file:
-                lastTime = int(file.read())
+    
+    i = 0
+    
+    while saver.running:
+        
+        if i == 0:
+            nowTime = datetime.datetime.now().hour
+            lastTime = 0
+            if os.path.exists("lastHour"):
+                with open("lastHour", "r") as file:
+                    lastTime = int(file.read())
 
-        if lastTime != nowTime:
-            curDay = datetime.datetime.now().isocalendar().weekday
-            for notify in updatedData.notifies:
-                parsed = json.loads(notify)
-                x1, x2, x3, x4 = parsed
+            if lastTime != nowTime:
+                curDay = datetime.datetime.now().isocalendar().weekday
+                for notify in updatedData.notifies:
+                    parsed = json.loads(notify)
+                    x1, x2, x3, x4 = parsed
 
-                groupID = findStudentIndex(x1)
-                if groupID == -1:
-                    continue
+                    groupID = findStudentIndex(x1)
+                    if groupID == -1:
+                        continue
 
-                if x2 in hoursList and hoursList.index(x2) == nowTime:
-                    try:
-                        dayIndex = curDay
-                        text = "завтра"
-                        if x2 <= 12:
-                            dayIndex -= 1
-                            text = "сегодня"
-                        if dayIndex < 6:
-                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                            curDay: group_data.DayData = curWeek[dayIndex]
+                    if x2 in hoursList and hoursList.index(x2) == nowTime:
+                        try:
+                            dayIndex = curDay
+                            text = "завтра"
+                            if x2 <= 12:
+                                dayIndex -= 1
+                                text = "сегодня"
+                            if dayIndex < 6:
+                                curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                                curDay: group_data.DayData = curWeek[dayIndex]
 
-                            img = imaginazer.toImageDay(
-                                curDay,
-                                days[dayIndex],
+                                img = imaginazer.toImageDay(
+                                    curDay,
+                                    days[dayIndex],
+                                    updatedData.pairs,
+                                    updatedData.teachers
+                                )
+                                img.seek(0)
+                                bot.send_photo(x1, img, f"Вот пары на {text}")
+                        except Exception:
+                            pass
+                    if x3 in hoursList and hoursList.index(x3) == nowTime and curDay == 7:
+                        try:
+                            if updatedData.groups_data_next[groupID].count("[") < 10:
+                                bot.send_message(x1, f"Извините, но расписание на следующую неделю ещё недоступно :(")
+                                continue
+                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+
+                            img = imaginazer.toImage(
+                                curWeek,
                                 updatedData.pairs,
                                 updatedData.teachers
                             )
                             img.seek(0)
-                            bot.send_photo(x1, img, f"Вот пары на {text}")
-                    except Exception:
-                        pass
-                if x3 in hoursList and hoursList.index(x3) == nowTime and curDay == 7:
-                    try:
-                        if updatedData.groups_data_next[groupID].count("[") < 10:
-                            bot.send_message(x1, f"Извините, но расписание на следующую неделю ещё недоступно :(")
-                            continue
-                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+                            bot.send_photo(x1, img, f"Вот пары на следующую неделю")
+                        except Exception:
+                            pass
 
-                        img = imaginazer.toImage(
-                            curWeek,
-                            updatedData.pairs,
-                            updatedData.teachers
-                        )
-                        img.seek(0)
-                        bot.send_photo(x1, img, f"Вот пары на следующую неделю")
-                    except Exception:
-                        pass
-
-            with open("lastHour", "w") as file:
-                file.write(str(nowTime))
-        time.sleep(600)                 # 10 minutes
+                with open("lastHour", "w") as file:
+                    file.write(str(nowTime))
+        i += 1
+        i %= 300
+        time.sleep(2)                 # 10 minutes
 
 
+def run_bot(saver: RunSaver):
+    
+    threading.Thread(target=thread_check_time, args=(saver, updatedData, NotifyButtonsTimesInt, days)).start()
 
-threading.Thread(target=thread_check_time, args=(updatedData, NotifyButtonsTimesInt, days)).start()
-
-bot.polling(non_stop=True)
+    bot.polling(non_stop=True)

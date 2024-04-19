@@ -1,5 +1,8 @@
 import time
+from run_saver import RunSaver
 from colorama import init, Fore, Style
+
+saver = RunSaver()
 
 init(autoreset=True)
 
@@ -7,6 +10,7 @@ import traceback
 try:
   print(Fore.LIGHTGREEN_EX + Style.BRIGHT + "Запуск...")
   import main
+  main.run_bot(saver)
 except Exception as err:
   errType = str(err)
   if errType == "BotRestartCommand":
@@ -26,4 +30,5 @@ except Exception as err:
   else:
     print(Fore.LIGHTRED_EX + Style.BRIGHT + traceback.format_exc(chain=True))
 time.sleep(4)
+saver.running = False
 quit()
