@@ -36,7 +36,8 @@ KeyboardButtons: list[str] = [
     "Команда",
 
     "Уведомления 🔔",
-    "Назад ◀️"
+    "Назад ◀️",
+    "Режим Работы ⚡️"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -252,7 +253,7 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
     if isInGroup:
         markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]),
                    KeyboardButton(KeyboardButtons[0]))
-        markup.row(KeyboardButton(KeyboardButtons[17]))
+        markup.row(KeyboardButton(KeyboardButtons[19]), KeyboardButton(KeyboardButtons[17]))
     else:
         markup.row(KeyboardButton(KeyboardButtons[0]))
 
@@ -369,8 +370,12 @@ def on_message(message: Message):
     elif textIndex == 1 and isDev:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
+        urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, updatedData.groups_data_cur, updatedData.groups_data_next]
+        
+        
+
         url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
-        url += json.dumps([updatedData.pairs, updatedData.teachers, updatedData.groups], ensure_ascii=False).replace(
+        url += json.dumps(urlData, ensure_ascii=False).replace(
             "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
         url += "customdataend"
 
@@ -444,6 +449,11 @@ def on_message(message: Message):
             markup.row(*inRow)
 
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
+        
+    elif textIndex == 19:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        bot.send_message(message.chat.id, "Выберите режим:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
