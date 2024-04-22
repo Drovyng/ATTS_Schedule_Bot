@@ -584,11 +584,8 @@ def mode_select(message: Message):
     if text == WorkModeButtons[1]:
         markup = btnsMarkup(getGroupsList(updatedData.teachers, 0), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, f"Стр. {course+2}")
-
-        if len(getGroupsList(updatedData.teachers, course + 2)) == 0:
-            btns[3] = truefalseEmoji[0]
-
+        btns.insert(2, "Стр. 1")
+        btns[1] = truefalseEmoji[0]
         markup.row(*btns)
 
         bot.send_message(message.chat.id, "Выберите ФИО...", reply_markup=markup)
