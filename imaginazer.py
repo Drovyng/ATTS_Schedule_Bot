@@ -51,7 +51,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
         offY = sizey / 4 + sizeY * i
 
         topText = days[i]
-        if day[0] != -1:
+        if day[0] == -1:
             day[0] = 0
         topText += f" | Приходить к {day[0]+1}-й паре"
         j = -1
