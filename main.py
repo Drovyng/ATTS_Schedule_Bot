@@ -80,6 +80,11 @@ SelectGroupButtons = [
     "⏩",
     KeyboardButtons[3]
 ]
+WorkModeButtons = [
+    "Студент 🙋🏻",
+    "Преподаватель 🔆",
+    KeyboardButtons[3]
+]
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
@@ -98,6 +103,8 @@ class UpdatedData():
         self.groups_data_cur: list[str] = []
         self.groups_data_next: list[str] = []
         self.groups_week: int = 0
+
+        self.saveTimer = 150
 
         self.notifies: list[str] = []
 
@@ -343,10 +350,10 @@ def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
     return markup
 
 
-def getGroupsList(page:int) -> list[str]:
+def getGroupsList(fromList:list[str], page:int) -> list[str]:
     btns: list[str] = []
     i = -1
-    for grp in updatedData.groups:
+    for grp in fromList:
         i += 1
         if page * 10 <= i < page * 10 + 10: btns.append(grp)
     return btns
@@ -418,7 +425,7 @@ def on_message(message: Message):
 
 
     elif textIndex == 0:
-        markup = btnsMarkup(getGroupsList(0), 5)
+        markup = btnsMarkup(getGroupsList(updatedData.groups, 0), 5)
         btns = SelectGroupButtons[:]
         btns.insert(2, "Стр. 1")
         btns[1] = truefalseEmoji[0]
@@ -513,8 +520,9 @@ def on_message(message: Message):
         
     elif textIndex == 19:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.row(*WorkModeButtons)
         bot.send_message(message.chat.id, "Выберите режим:", reply_markup=markup)
-        #bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, mode_select)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
@@ -553,6 +561,41 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Напишите название ново{sendText}")
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
+
+def mode_select():
+    global updatedData, NotifyButtons, KeyboardButtons, WorkModeButtons
+
+    text = message.text
+    userID = message.from_user.id
+
+    if text == KeyboardButtons[3]:
+        start(message)
+        return
+    if text == WorkModeButtons[0]:
+        markup = btnsMarkup(getGroupsList(updatedData.groups, 0), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, "Стр. 1")
+        btns[1] = truefalseEmoji[0]
+        markup.row(*btns)
+
+        bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_group, 0)
+        return
+    if text == WorkModeButtons[1]:
+        markup = btnsMarkup(getGroupsList(updatedData.teachers, course+1), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, f"Стр. {course+2}")
+
+        if len(getGroupsList(updatedData.teachers, course + 2)) == 0:
+            btns[3] = truefalseEmoji[0]
+
+        markup.row(*btns)
+
+        bot.send_message(message.chat.id, "Выберите ФИО...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_teacher, 0)
+        return
+
+
 
 
 def set_notify_data(notifyData):
@@ -604,7 +647,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             x1, x2, x3, x4 = notifyData
             notifyData = x1, x2, x3, True
             set_notify_data(notifyData)
-            updatedData.saveAll()
+            
             bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}]!", reply_markup=menu_keyboard(userID))
         elif text == NotifyButtonsSelect[2]:
             x1, x2, x3, x4 = notifyData
@@ -613,7 +656,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             elif curSelected == 3: x4 = False
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
-            updatedData.saveAll()
+            
             bot.send_message(message.chat.id, f"Вы успешно отключили уведомление [{punkt}]!",
                              reply_markup=menu_keyboard(userID))
 
@@ -626,7 +669,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             elif curSelected == 1: x3 = timeIndex
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
-            updatedData.saveAll()
+            
             bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
 
 
@@ -716,7 +759,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                     bot.send_message(message.chat.id, f"Пытаюсь обновить файл [{name}]...",
                                      reply_markup=menu_keyboard(userID))
                     raise Exception(f"UpdateFile|{name}")
-                updatedData.saveAll()
+                
                 bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!",
                                  reply_markup=menu_keyboard(userID))
             else:
@@ -744,7 +787,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                         return
                     updatedData.teachers.remove(name)
                     sendText = " преподаватель"
-                updatedData.saveAll()
+                
                 bot.send_message(message.chat.id, f"Успешно удален{sendText} [{name}]!",
                                  reply_markup=menu_keyboard(userID))
 
@@ -789,6 +832,71 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, True, text)
 
 
+def select_teacher(message: Message, course:int):
+    global KeyboardButtons, updatedData
+    text = message.text
+    userID = message.from_user.id
+    studentIndex = findStudentIndex(userID)
+    whoAmI = ""
+
+    if studentIndex != -1:
+        if json.loads(updatedData.students[studentIndex])[1] == "Teacher":
+            whoAmI = json.loads(updatedData.students[studentIndex])[2]
+        
+    if text == SelectGroupButtons[3]:
+        start(message)
+        return
+    if text == SelectGroupButtons[1]:
+        markup = btnsMarkup(getGroupsList(updatedData.teachers, course-1), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, f"Стр. {course}")
+
+        if len(getGroupsList(updatedData.teachers, course - 2)) == 0:
+            btns[1] = truefalseEmoji[0]
+
+        markup.row(*btns)
+
+        bot.send_message(message.chat.id, "Выберите ФИО...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_teacher, course-1)
+        return
+    if text == SelectGroupButtons[2]:
+        markup = btnsMarkup(getGroupsList(updatedData.teachers, course+1), 5)
+        btns = SelectGroupButtons[:]
+        btns.insert(2, f"Стр. {course+2}")
+
+        if len(getGroupsList(updatedData.teachers, course + 2)) == 0:
+            btns[3] = truefalseEmoji[0]
+
+        markup.row(*btns)
+
+        bot.send_message(message.chat.id, "Выберите ФИО...", reply_markup=markup)
+        bot.register_next_step_handler(message, select_teacher, course+1)
+        return
+    if text == SelectGroupButtons[0]:
+        if studentIndex == -1:
+            bot.send_message(message.chat.id, f"Вы и так не преподаватель!", reply_markup=menu_keyboard(userID))
+        else:
+            updatedData.students.pop(studentIndex)
+            bot.send_message(message.chat.id, f"Вы больше не [{whoAmI}]!",
+                             reply_markup=menu_keyboard(userID))
+            
+        return
+
+    if text in updatedData.teachers:
+        if whoAmI != text:
+            if studentIndex != -1:
+                updatedData.students.pop(studentIndex)
+            updatedData.students.append(json.dumps([userID, "Teacher", text], ensure_ascii=False))
+            
+            bot.send_message(message.chat.id, f"Теперь вы [{text}]!", reply_markup=menu_keyboard(userID))
+        else:
+            bot.send_message(message.chat.id, f"Вы уже [{text}]!",
+                             reply_markup=menu_keyboard(userID))
+        return
+
+    bot.send_message(message.chat.id, f"Неизвестный вариант ответа.", reply_markup=menu_keyboard(userID))
+
+
 def select_group(message: Message, course:int):
     global KeyboardButtons, updatedData
     text = message.text
@@ -798,19 +906,16 @@ def select_group(message: Message, course:int):
 
     if studentIndex != -1:
         group = json.loads(updatedData.students[studentIndex])[1]
-
-    if text == truefalseEmoji[0]:
-        bot.register_next_step_handler(message, select_group, course)
         
     if text == SelectGroupButtons[3]:
         start(message)
         return
     if text == SelectGroupButtons[1]:
-        markup = btnsMarkup(getGroupsList(course-1), 5)
+        markup = btnsMarkup(getGroupsList(updatedData.groups, course-1), 5)
         btns = SelectGroupButtons[:]
         btns.insert(2, f"Стр. {course}")
 
-        if len(getGroupsList(course - 2)) == 0:
+        if len(getGroupsList(updatedData.groups, course - 2)) == 0:
             btns[1] = truefalseEmoji[0]
 
         markup.row(*btns)
@@ -819,11 +924,11 @@ def select_group(message: Message, course:int):
         bot.register_next_step_handler(message, select_group, course-1)
         return
     if text == SelectGroupButtons[2]:
-        markup = btnsMarkup(getGroupsList(course+1), 5)
+        markup = btnsMarkup(getGroupsList(updatedData.groups, course+1), 5)
         btns = SelectGroupButtons[:]
         btns.insert(2, f"Стр. {course+2}")
 
-        if len(getGroupsList(course + 2)) == 0:
+        if len(getGroupsList(updatedData.groups, course + 2)) == 0:
             btns[3] = truefalseEmoji[0]
 
         markup.row(*btns)
@@ -838,7 +943,7 @@ def select_group(message: Message, course:int):
             updatedData.students.pop(studentIndex)
             bot.send_message(message.chat.id, f"Вы больше не подключены к группе [{group}]!",
                              reply_markup=menu_keyboard(userID))
-            updatedData.saveAll()
+            
         return
 
     if text in updatedData.groups:
@@ -846,7 +951,7 @@ def select_group(message: Message, course:int):
             if studentIndex != -1:
                 updatedData.students.pop(studentIndex)
             updatedData.students.append(json.dumps([userID, text], ensure_ascii=False))
-            updatedData.saveAll()
+            
             bot.send_message(message.chat.id, f"Вы подключены к группе [{text}]!", reply_markup=menu_keyboard(userID))
         else:
             bot.send_message(message.chat.id, f"Вы уже подключены к группе [{text}]!",
@@ -898,7 +1003,7 @@ def on_webapp_msg(message):
                 img.seek(0)
                 bot.send_photo(x1, img, f"⚠️ Пары на эту неделю были обновлены! ⚠️")
                 
-    updatedData.saveAll()
+    
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
 
@@ -914,7 +1019,10 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
     i = 0
     
     while saver.running:
-        
+        if updatedData.saveTimer <= 0:
+            updatedData.saveAll()
+            updatedData.saveTimer = 60         # 1 minute
+
         if i == 0:
             nowTime = datetime.datetime.now().hour
             lastTime = 0
@@ -976,6 +1084,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                     file.write(str(nowTime))
         i += 1
         i %= 300
+        updatedData.saveTimer -= 2
         time.sleep(2)                 # 10 minutes
 
 
@@ -983,4 +1092,7 @@ def run_bot(saver: RunSaver):
     
     threading.Thread(target=thread_check_time, args=(saver, updatedData, NotifyButtonsTimesInt, days)).start()
 
-    bot.polling(non_stop=True)
+    try:
+        bot.polling(non_stop=True)
+    except:
+        updatedData.saveAll()
