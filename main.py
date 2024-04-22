@@ -216,7 +216,7 @@ teachersPairs: list[list[group_data.WeekDataTeacher]] = [[], []]
 def recalculateTeachersPairs(nextWeek: bool):
     global updatedData, teachersPairs, emptyTeacherDay
     nextWeekInt = 1 if nextWeek else 0
-    teachersPairs[nextWeekInt] = [[emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay] for i in updatedData.teachersCount]
+    teachersPairs[nextWeekInt] = [[emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay] for i in range(updatedData.teachersCount)]
 
     toRead = updatedData.groups_data_cur if nextWeek else updatedData.groups_data_next
 
@@ -288,7 +288,7 @@ def findStudentIndex(userID) -> int:
 
 def findStudentGroup(userID) -> int:
     global updatedData
-    student = findStudent()
+    student = findStudent(userID)
     if student == None or not student[1] in updatedData.groups:
         return -1
     return updatedData.groups.index(student[1])
@@ -329,7 +329,7 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
 
 def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
     lengrp = len(btns)
-    inrow = min(lengrp, maxLen)
+    inrow = max(min(lengrp, maxLen), 1)
     rows = lengrp // inrow
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -343,12 +343,13 @@ def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
     return markup
 
 
-def getGroupsList(course:int) -> list[str]:
-    btns = []
+def getGroupsList(page:int) -> list[str]:
+    btns: list[str] = []
+    i = -1
     for grp in updatedData.groups:
-        courseYear = datetime.datetime.now().isocalendar()[0] - course
-        if grp.startswith(str(courseYear)[-2:]):
-            btns.append(grp)
+        i += 1
+        if page * 10 <= i < page * 10 + 10: btns.append(grp)
+    return btns
 
 
 @bot.message_handler(commands=['start', 'clear', 'menu'])
@@ -419,7 +420,7 @@ def on_message(message: Message):
     elif textIndex == 0:
         markup = btnsMarkup(getGroupsList(0), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, "1-й Курс")
+        btns.insert(2, "Страница 1")
         btns[1] = truefalseEmoji[0]
         markup.row(*btns)
 
@@ -794,7 +795,6 @@ def select_group(message: Message, course:int):
     userID = message.from_user.id
     studentIndex = findStudentIndex(userID)
     group = ""
-    changed = False
 
     if studentIndex != -1:
         group = json.loads(updatedData.students[studentIndex])[1]
@@ -808,11 +808,12 @@ def select_group(message: Message, course:int):
     if text == SelectGroupButtons[1]:
         markup = btnsMarkup(getGroupsList(course-1), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, f"{course}-й Курс")
-        markup.row(*btns)
-        
-        if len(getGroupsList(course-1)) == 0:
+        btns.insert(2, f"Страница {course}")
+
+        if len(getGroupsList(course - 2)) == 0:
             btns[1] = truefalseEmoji[0]
+
+        markup.row(*btns)
 
         bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
         bot.register_next_step_handler(message, select_group, course-1)
@@ -820,11 +821,12 @@ def select_group(message: Message, course:int):
     if text == SelectGroupButtons[2]:
         markup = btnsMarkup(getGroupsList(course+1), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, f"{course}-й Курс")
-        markup.row(*btns)
-        
-        if len(getGroupsList(course+2)) == 0:
+        btns.insert(2, f"Страница {course+2}")
+
+        if len(getGroupsList(course + 2)) == 0:
             btns[3] = truefalseEmoji[0]
+
+        markup.row(*btns)
 
         bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
         bot.register_next_step_handler(message, select_group, course+1)
