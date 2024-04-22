@@ -420,7 +420,7 @@ def on_message(message: Message):
     elif textIndex == 0:
         markup = btnsMarkup(getGroupsList(0), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, "Страница 1")
+        btns.insert(2, "Стр. 1")
         btns[1] = truefalseEmoji[0]
         markup.row(*btns)
 
@@ -800,15 +800,15 @@ def select_group(message: Message, course:int):
         group = json.loads(updatedData.students[studentIndex])[1]
 
     if text == truefalseEmoji[0]:
-        bot.register_next_step_handler(message, select_group, updatedData.groups, course)
+        bot.register_next_step_handler(message, select_group, course)
         
-    if text == SelectGroupButtons[0]:
+    if text == SelectGroupButtons[3]:
         start(message)
         return
     if text == SelectGroupButtons[1]:
         markup = btnsMarkup(getGroupsList(course-1), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, f"Страница {course}")
+        btns.insert(2, f"Стр. {course}")
 
         if len(getGroupsList(course - 2)) == 0:
             btns[1] = truefalseEmoji[0]
@@ -821,7 +821,7 @@ def select_group(message: Message, course:int):
     if text == SelectGroupButtons[2]:
         markup = btnsMarkup(getGroupsList(course+1), 5)
         btns = SelectGroupButtons[:]
-        btns.insert(2, f"Страница {course+2}")
+        btns.insert(2, f"Стр. {course+2}")
 
         if len(getGroupsList(course + 2)) == 0:
             btns[3] = truefalseEmoji[0]
@@ -831,7 +831,7 @@ def select_group(message: Message, course:int):
         bot.send_message(message.chat.id, "Выберите Группу...", reply_markup=markup)
         bot.register_next_step_handler(message, select_group, course+1)
         return
-    if text == SelectGroupButtons[3]:
+    if text == SelectGroupButtons[0]:
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы и так не подключены к группе!", reply_markup=menu_keyboard(userID))
         else:
