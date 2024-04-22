@@ -562,7 +562,7 @@ def on_message(message: Message):
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
 
-def mode_select():
+def mode_select(message: Message):
     global updatedData, NotifyButtons, KeyboardButtons, WorkModeButtons
 
     text = message.text
