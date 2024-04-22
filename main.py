@@ -413,12 +413,13 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
         
+        img = None
         if findIsTeacher(userID):
             curWeek: group_data.WeekDataTeacher = teachersPairs[0][findTeacherIndex(userID)]
             img = imaginazer.toImageTeacher(
                 curWeek,
                 updatedData.pairs,
-                    updatedData.teachers
+                updatedData.groups
             )
         else:
             groupID = -1
@@ -433,7 +434,7 @@ def on_message(message: Message):
             img = imaginazer.toImage(
                 curWeek,
                 updatedData.pairs,
-                updatedData.groups
+                updatedData.teachers
             )
         bot.send_photo(message.chat.id, img, "Вот пары на эту неделю", reply_markup=menu_keyboard(userID))
 
@@ -1076,6 +1077,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                                 curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
                                 curDay: group_data.DayData = curWeek[dayIndex]
 
+                                img = None
                                 if findIsTeacher(x1):
                                     img = imaginazer.toImageDayTeacher(
                                         curDay,
@@ -1108,14 +1110,14 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                                 img = imaginazer.toImageTeacher(
                                     curWeek,
                                     updatedData.pairs,
-                                    updatedData.teachers
+                                    updatedData.groups
                                 )
                             else:
                                 curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
                                 img = imaginazer.toImage(
                                     curWeek,
                                     updatedData.pairs,
-                                    updatedData.groups
+                                    updatedData.teachers
                                 )
                             img.seek(0)
                             bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
