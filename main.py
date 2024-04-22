@@ -221,7 +221,7 @@ def recalculateTeachersPairs(nextWeek:bool):
     nextWeekInt = 1 if nextWeek else 0
     teachersPairs[nextWeekInt] = [[emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay] for i in range(updatedData.teachersCount)]
 
-    toRead = updatedData.groups_data_cur if nextWeek else updatedData.groups_data_next
+    toRead = updatedData.groups_data_next if nextWeek else updatedData.groups_data_cur
 
     for i in range(updatedData.groupsCount):
         data = toRead[i]
@@ -430,12 +430,13 @@ def on_message(message: Message):
                 bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!",
                                  reply_markup=menu_keyboard(userID))
                 return
-            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
             img = imaginazer.toImage(
                 curWeek,
                 updatedData.pairs,
                 updatedData.teachers
             )
+        img.seek(0)
         bot.send_photo(message.chat.id, img, "Вот пары на эту неделю", reply_markup=menu_keyboard(userID))
 
     elif textIndex == 6:
@@ -751,12 +752,21 @@ def get_pair_day(message: Message):
     curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
     curDay: group_data.DayData = curWeek[dayIndex]
 
-    img = imaginazer.toImageDay(
-        curDay,
-        days[dayIndex],
-        updatedData.pairs,
-        updatedData.teachers
-    )
+    img = None
+    if findIsTeacher(userID):
+        img = imaginazer.toImageDayTeacher(
+            teachersPairs[0][findTeacherIndex(userID)][dayIndex],
+            days[dayIndex],
+            updatedData.pairs,
+            updatedData.groups
+        )
+    else:
+        img = imaginazer.toImageDay(
+            curDay,
+            days[dayIndex],
+            updatedData.pairs,
+            updatedData.teachers
+        )
     img.seek(0)
     bot.send_photo(message.chat.id, img, f"Вот пары на {text.lower()}", reply_markup=menu_keyboard(userID))
 
@@ -1080,10 +1090,10 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                                 img = None
                                 if findIsTeacher(x1):
                                     img = imaginazer.toImageDayTeacher(
-                                        curDay,
+                                        teachersPairs[0][findTeacherIndex(x1)][dayIndex],
                                         days[dayIndex],
                                         updatedData.pairs,
-                                        updatedData.teachers
+                                        updatedData.groups
                                     )
                                 else:
                                     img = imaginazer.toImageDay(

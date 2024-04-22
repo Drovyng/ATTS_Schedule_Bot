@@ -248,7 +248,7 @@ def toImageDayTeacher(day:DayDataTeacher, dayText:str, getPairs:list[str], getGr
     s532 = int(532 * scale)
     s10 = int(10 * scale)
 
-    img = Image.new("RGB", (sizeX * 2 + offX * 3, sizeY*2), (200, 200, 200))
+    img = Image.new("RGB", (sizeX, sizeY*2), (200, 200, 200))
     imgDraw = ImageDraw.Draw(img, "RGB")
     font = ImageFont.truetype("times.ttf", int(20 * scale))
 

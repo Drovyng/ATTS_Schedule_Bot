@@ -61,6 +61,7 @@ def on_message(message: Message):
             newMarkup = ReplyKeyboardMarkup(resize_keyboard=True)
             newMarkup.row(KeyboardButton("Меню 📋"))
             bot.send_message(message.chat.id, "Выполняется перезагрузка бота...", reply_markup=newMarkup)
+            raise Exception("Выход")
 
 
 def listen_command(message: Message):

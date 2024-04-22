@@ -3,12 +3,12 @@ import os, time
 
 def startRun() -> float:
     startTime = time.perf_counter()
-    os.system("\"C:\\Program Files\\Python312\\python.exe\" run.py")
+    os.system("\"C:\\Program Files\\Python312\\python.exe\" run.py")                         # \"C:\\Program Files\\Python312\\python.exe\"
     return time.perf_counter() - startTime
 
 
 def startEmergency():
-    import main_emergency
+    os.system("\"C:\\Program Files\\Python312\\python.exe\" main_emergency.py")
 
 
 last1 = -1
