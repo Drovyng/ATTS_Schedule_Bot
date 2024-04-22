@@ -582,7 +582,7 @@ def mode_select(message: Message):
         bot.register_next_step_handler(message, select_group, 0)
         return
     if text == WorkModeButtons[1]:
-        markup = btnsMarkup(getGroupsList(updatedData.teachers, course+1), 5)
+        markup = btnsMarkup(getGroupsList(updatedData.teachers, 0), 5)
         btns = SelectGroupButtons[:]
         btns.insert(2, f"Стр. {course+2}")
 
