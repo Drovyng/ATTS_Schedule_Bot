@@ -51,7 +51,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
         offY = sizey / 4 + sizeY * i
 
         topText = days[i]
-        if day[0] != -1:
+        if day[0] == -1:
             day[0] = 0
         topText += f" | Приходить к {day[0]+1}-й паре"
         j = -1
@@ -116,7 +116,7 @@ def toImageTeacher(week:WeekDataTeacher, getPairs:list[str], getGroups:list[str]
         j = -1
         for pair in [day[0], day[1], day[2]]:
             j += 1
-            if min(pair) == -1:
+            if min(pair) == -1 or -1 in pair:
                 continue
             imgDraw.text((s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
             imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
@@ -127,7 +127,7 @@ def toImageTeacher(week:WeekDataTeacher, getPairs:list[str], getGroups:list[str]
         j = -1
         for pair in [day[3], day[4], day[5]]:
             j += 1
-            if min(pair) == -1:
+            if min(pair) == -1 or -1 in pair:
                 continue
             imgDraw.text((offXAdd + s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
             imgDraw.rectangle((offXAdd + s300 + offX, s65 + sizey * j + offY, offXAdd + sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
@@ -214,6 +214,89 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
     imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
     imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
     imgDraw.line((s500 + offX, s48 + offY, s500 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+
+    output = BytesIO()
+    img.save(output, format='PNG')
+    return output
+
+
+
+
+def toImageDayTeacher(day:DayDataTeacher, dayText:str, getPairs:list[str], getGroups:list[str]) -> BytesIO:
+    
+    global days
+    pairs = getPairs[:]
+    pairs.append("")
+    groups = getGroups[:]
+    groups.append("")
+
+    scale = 32.0 / 20.0
+
+    offX = int(16 * scale)
+    sizeY = int(220 * scale)
+    sizey = int(50 * scale)
+    sizeX = int(565 * scale)
+
+    width = int(4 * scale)
+
+    s48 = int(48 * scale)
+    s300 = int(300 * scale)
+    s500 = int(500 * scale)
+    s6 = int(6 * scale)
+    s65 = int(65 * scale)
+    s306 = int(306 * scale)
+    s532 = int(532 * scale)
+    s10 = int(10 * scale)
+
+    img = Image.new("RGB", (sizeX + offX * 2, sizeY*2 + sizey // 4), (200, 200, 200))
+    imgDraw = ImageDraw.Draw(img, "RGB")
+    font = ImageFont.truetype("times.ttf", int(20 * scale))
+
+    offY = sizey / 4
+    j = -1
+    for pair in [day[0], day[1], day[2]]:
+        j += 1
+        if min(pair) == -1:
+            continue
+        imgDraw.text((s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
+        imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
+        imgDraw.text((s306 + offX, s65 + sizey * j + offY), groups[pair[1]], (0, 0, 0), font=font)
+        imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
+
+    dayText2 = dayText + " | 1-й курс"
+    imgDraw.text((int(sizeX/2 - font.getlength(dayText2) / 2) + offX, s10 + offY), dayText2, (0, 0, 0), font=font)
+
+    imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
+
+    imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
+    imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
+    imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
+    imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+    imgDraw.line((s500 + offX, s48 + offY, s500 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+
+    offY = sizey / 4 + sizeY
+    j = -1
+    for pair in [day[3], day[4], day[5]]:
+        j += 1
+        if min(pair) == -1:
+            continue
+        imgDraw.text((s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
+        imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
+        imgDraw.text((s306 + offX, s65 + sizey * j + offY), groups[pair[1]], (0, 0, 0), font=font)
+        imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
+
+    dayText2 = dayText + " | 2-й курс"
+    imgDraw.text((int(sizeX/2 - font.getlength(dayText2) / 2) + offX, s10 + offY), dayText2, (0, 0, 0), font=font)
+
+    imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
+
+    imgDraw.rectangle((offX, s48 + offY, sizeX + offX, s48 + sizey * 3 + offY), None, (100, 100, 100), width)
+    imgDraw.line((offX, s48 + sizey + offY, sizeX + offX, s48 + sizey + offY), (100, 100, 100), width)
+    imgDraw.line((offX, s48 + sizey * 2 + offY, sizeX + offX, s48 + sizey * 2 + offY), (100, 100, 100), width)
+    imgDraw.line((s300 + offX, s48 + offY, s300 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+    imgDraw.line((s500 + offX, s48 + offY, s500 + offX, s48 + sizey * 3 + offY), (100, 100, 100), width)
+
+
 
     output = BytesIO()
     img.save(output, format='PNG')
