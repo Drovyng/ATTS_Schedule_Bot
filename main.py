@@ -1092,8 +1092,4 @@ def run_bot(saver: RunSaver):
     
     threading.Thread(target=thread_check_time, args=(saver, updatedData, NotifyButtonsTimesInt, days)).start()
 
-    try:
-        bot.polling(non_stop=True)
-    except Exception as err:
-        updatedData.saveAll()
-        raise err
+    bot.polling(non_stop=True)
