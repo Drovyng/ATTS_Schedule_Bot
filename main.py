@@ -5,10 +5,6 @@ import group_data, sheets, json
 import imaginazer
 
 ChatMessages: dict[str, Union[str, list, tuple]] = {
-    "start": [
-        "Привет! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!",
-        "Привет, разработчик! Я создан для того, чтобы студенты <b>Армавирского Техникума Технологии и Сервиса</b> могли узнать расписание в любое время!"
-    ],
     "dev": "Включён режим разработчика"
 }
 
@@ -220,7 +216,7 @@ emptyTeacherDay: group_data.DayDataTeacher = [[-1, -1, -1], [-1, -1, -1], [-1, -
 
 teachersPairs: list[list[group_data.WeekDataTeacher]] = [[], []]
 
-def recalculateTeachersPairs(nextWeek: bool):
+def recalculateTeachersPairs(nextWeek:bool):
     global updatedData, teachersPairs, emptyTeacherDay
     nextWeekInt = 1 if nextWeek else 0
     teachersPairs[nextWeekInt] = [[emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay, emptyTeacherDay] for i in range(updatedData.teachersCount)]
@@ -292,6 +288,20 @@ def findStudentIndex(userID) -> int:
             return i
         i += 1
     return -1
+
+def findTeacherIndex(userID) -> int:
+    global updatedData
+    student = findStudent(userID)
+    if student == None or not student[2] in updatedData.teachers:
+        return -1
+    return updatedData.teachers.index(student[2])
+
+def findIsTeacher(userID) -> bool:
+    global updatedData
+    student = findStudent(userID)
+    if student == None:
+        return False
+    return student[1] == "Teacher"
 
 def findStudentGroup(userID) -> int:
     global updatedData
@@ -365,8 +375,19 @@ def start(message: Message):
 
     userID = message.from_user.id
     isDev = getIsDev(userID)
+    
+    text = ""
 
-    bot.send_message(message.chat.id, getChatMessage("start", isDev), reply_markup=menu_keyboard(userID),
+    if isDev:
+        text = "Привет, разработчик! Я создан для того, чтобы студенты <b>Армавирского Техникума Технологии и Сервиса</b> могли узнать расписание в любое время!"
+    elif findIsTeacher(userID):
+        text = "Привет, преподаватель! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
+    elif findStudentIndex(userID) != -1:
+        text = "Привет, студент! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
+    else:
+        text = "Привет! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
+
+    bot.send_message(message.chat.id, text, reply_markup=menu_keyboard(userID),
                      parse_mode="html")
 
 
@@ -391,22 +412,29 @@ def on_message(message: Message):
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
-        groupID = -1
-        groupName = json.loads(updatedData.students[studentIndex])[1]
-        if updatedData.groups.count(groupName) != 0:
-            groupID = updatedData.groups.index(groupName)
-        if groupID == -1 or updatedData.groups_data_cur[groupID].count("[") < 10:
-            bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!",
-                             reply_markup=menu_keyboard(userID))
-            return
-        img = imaginazer.toImage(
-            group_data.loadWeek(
-                updatedData.groups_data_cur[groupID]
-            ),
-            updatedData.pairs,
-            updatedData.teachers
-        )
-        img.seek(0)
+        
+        if findIsTeacher(userID):
+            curWeek: group_data.WeekDataTeacher = teachersPairs[0][findTeacherIndex(userID)]
+            img = imaginazer.toImageTeacher(
+                curWeek,
+                updatedData.pairs,
+                    updatedData.teachers
+            )
+        else:
+            groupID = -1
+            groupName = json.loads(updatedData.students[studentIndex])[1]
+            if updatedData.groups.count(groupName) != 0:
+                groupID = updatedData.groups.index(groupName)
+            if groupID == -1 or updatedData.groups_data_cur[groupID].count("[") < 10:
+                bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!",
+                                 reply_markup=menu_keyboard(userID))
+                return
+            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+            img = imaginazer.toImage(
+                curWeek,
+                updatedData.pairs,
+                updatedData.groups
+            )
         bot.send_photo(message.chat.id, img, "Вот пары на эту неделю", reply_markup=menu_keyboard(userID))
 
     elif textIndex == 6:
@@ -1048,12 +1076,20 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                                 curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
                                 curDay: group_data.DayData = curWeek[dayIndex]
 
-                                img = imaginazer.toImageDay(
-                                    curDay,
-                                    days[dayIndex],
-                                    updatedData.pairs,
-                                    updatedData.teachers
-                                )
+                                if findIsTeacher(x1):
+                                    img = imaginazer.toImageDayTeacher(
+                                        curDay,
+                                        days[dayIndex],
+                                        updatedData.pairs,
+                                        updatedData.teachers
+                                    )
+                                else:
+                                    img = imaginazer.toImageDay(
+                                        curDay,
+                                        days[dayIndex],
+                                        updatedData.pairs,
+                                        updatedData.teachers
+                                    )
                                 img.seek(0)
                                 bot.send_photo(x1, img, f"Вот пары на {text}")
                         except Exception:
@@ -1065,13 +1101,22 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                             if updatedData.groups_data_next[groupID].count("[") < 10:
                                 bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
                                 continue
-                            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
-
-                            img = imaginazer.toImage(
-                                curWeek,
-                                updatedData.pairs,
-                                updatedData.teachers
-                            )
+                            img = None
+                            if findIsTeacher(x1):
+                                nextWeekInt = 1 if curDay == 7 else 0
+                                curWeek: group_data.WeekDataTeacher = teachersPairs[nextWeekInt][findTeacherIndex(x1)]
+                                img = imaginazer.toImageTeacher(
+                                    curWeek,
+                                    updatedData.pairs,
+                                    updatedData.teachers
+                                )
+                            else:
+                                curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+                                img = imaginazer.toImage(
+                                    curWeek,
+                                    updatedData.pairs,
+                                    updatedData.groups
+                                )
                             img.seek(0)
                             bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
                         except Exception:
