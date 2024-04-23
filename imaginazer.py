@@ -57,7 +57,7 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
         j = -1
         for pair in [day[1], day[2], day[3]]:
             j += 1
-            if min(pair) == -1:
+            if pair[0] == -1:
                 continue
             imgDraw.text((s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
             imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
@@ -197,7 +197,7 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
     j = -1
     for pair in [day[1], day[2], day[3]]:
         j += 1
-        if min(pair) == -1:
+        if pair[0] == -1:
             continue
         imgDraw.text((s6 + offX, s65 + sizey * j + offY), pairs[pair[0]], (0, 0, 0), font=font)
         imgDraw.rectangle((s300 + offX, s65 + sizey * j + offY, sizeX + offX * 2, s65 + sizey * (j+1) + offY), (200, 200, 200))
