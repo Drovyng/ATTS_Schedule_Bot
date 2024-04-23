@@ -35,7 +35,7 @@ KeyboardButtons: list[str] = [
     "Назад ◀️",
     "Выбрать Роль ⚡️",
     "Выбрать ФИО 🔆",
-    "Спенить Роль ⚡️"
+    "Сменить Роль ⚡️"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -684,7 +684,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
         toggleOn = (not punktToggled and text == NotifyButtonsSelect[1])
         if (punktToggled and text == NotifyButtonsSelect[0]) or (toggleOn and curSelected != 2):
             btns = NotifyButtonsTimes[:]
-            bot.send_message(message.chat.id, f"Выберите время для присылания уведомление [{punkt}]:", reply_markup=btnsMarkup(btns))
+            bot.send_message(message.chat.id, f"Выберите время для отправки уведомления [{punkt}]:", reply_markup=btnsMarkup(btns))
             bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 2, curSelected)
         elif toggleOn and curSelected == 2:
             x1, x2, x3, x4 = notifyData
@@ -1071,11 +1071,17 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
     time.sleep(5)
     
     i = 0
+    e = -1
     
     while saver.running:
         if updatedData.saveTimer <= 0:
             updatedData.saveAll()
             updatedData.saveTimer = 60         # 1 minute
+            e += 1
+            if e >= 25:
+                saver.running = False
+                bot.stop_bot()
+                raise Exception("BotRestartCommand")
 
         if i == 0:
             nowTime = datetime.datetime.now().hour
