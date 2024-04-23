@@ -62,7 +62,7 @@ def on_message(message: Message):
             newMarkup.row(KeyboardButton("Меню 📋"))
             bot.send_message(message.chat.id, "Выполняется перезагрузка бота...", reply_markup=newMarkup)
             bot.stop_bot()
-            quit()
+            raise Exception()
 
 
 def listen_command(message: Message):
