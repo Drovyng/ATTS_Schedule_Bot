@@ -10,7 +10,7 @@ ChatMessages: dict[str, Union[str, list, tuple]] = {
 
 KeyboardButtons: list[str] = [
     "Выбрать Группу 🗒",
-    "Режим Разработчика 🔧",
+    "Админ 🔧",
 
     "Загрузить Расписание ✏️",
     "Меню 📋",
@@ -35,7 +35,8 @@ KeyboardButtons: list[str] = [
     "Назад ◀️",
     "Выбрать Роль ⚡️",
     "Выбрать ФИО 🔆",
-    "Сменить Роль ⚡️"
+    "Сменить Роль ⚡️",
+    "Редактор 🧷"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -93,7 +94,8 @@ import datetime
 
 class UpdatedData():
     def __init__(self):
-        self.devs: list[str] = []
+        self.admins: list[str] = []
+        self.editors: list[str] = []
         self.teachers: list[str] = []
         self.pairs: list[str] = []
         self.groups: list[str] = []
@@ -114,7 +116,8 @@ class UpdatedData():
 
     def resize(self):
 
-        self.devsCount = len(self.devs)
+        self.adminsCount = len(self.admins)
+        self.editorsCount = len(self.editors)
         self.teachersCount = len(self.teachers)
         self.pairsCount = len(self.pairs)
         self.groupsCount = len(self.groups)
@@ -122,9 +125,13 @@ class UpdatedData():
         self.notifiesCount = len(self.notifies)
 
     def reloadAll(self):
-        self.devsCount = int(sheets.getRange("A2")[0][0])
-        if self.devsCount > 0:
-            self.devs = sheets.getRange(f"A3:A{2 + self.devsCount}")[0]
+        self.adminsCount = int(sheets.getRange("A2")[0][0])
+        if self.adminsCount > 0:
+            self.devs = sheets.getRange(f"A3:A{2 + self.adminsCount}")[0]
+
+        self.editorsCount = int(sheets.getRange("G2")[0][0])
+        if self.editorsCount > 0:
+            self.devs = sheets.getRange(f"G3:G{2 + self.editorsCount}")[0]
 
         self.teachersCount = int(sheets.getRange("B2")[0][0])
         self.teachers = sheets.getRange(f"B3:B{2 + self.teachersCount}")[0]
@@ -179,10 +186,20 @@ class UpdatedData():
     def saveAll(self):
         self.check(True)
 
-        sheets.setRange("A2", [[str(len(self.devs))]])
-        sendDevs = self.devs[:]
-        while len(sendDevs) < self.devsCount: sendDevs.append("")
-        sheets.setRange(f"A3:A{2 + max(self.devsCount, len(sendDevs))}", [sendDevs])
+
+
+        sheets.setRange("A2", [[str(len(self.admins))]])
+        sendAdmins = self.admins[:]
+        while len(sendAdmins) < self.adminsCount: sendAdmins.append("")
+        sheets.setRange(f"A3:A{2 + max(self.adminsCount, len(sendAdmins))}", [sendAdmins])
+
+        sheets.setRange("G2", [[str(len(self.editors))]])
+        sendEditors = self.editors[:]
+        while len(sendEditors) < self.editorsCount: sendEditors.append("")
+        sheets.setRange(f"G3:G{2 + max(self.editorsCount, len(sendEditors))}", [sendEditors])
+
+
+
 
         sheets.setRange("B2", [[str(len(self.teachers))]])
         sendTeachers = self.teachers[:]
@@ -317,7 +334,12 @@ def findStudentGroup(userID) -> int:
 
 def getIsDev(userID: int) -> bool:
     global updatedData
-    return userID in updatedData.devs or userID in config.developers
+    return userID in updatedData.admins or userID in config.developers
+
+
+def getIsEditor(userID: int) -> bool:
+    global updatedData
+    return getIsDev(userID) or userID in updatedData.editors
 
 
 def getUserNotifyIndex(userID: int) -> int:
@@ -344,8 +366,13 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
     else:
         markup.row(KeyboardButton(KeyboardButtons[19]))
 
+    btns = []
+    if getIsEditor(userID):
+        btns.append(KeyboardButton(KeyboardButtons[22]))
     if isDev:
-        markup.row(KeyboardButton(KeyboardButtons[1]))
+        btns.append(KeyboardButton(KeyboardButtons[1]))
+
+    markup.row(*btns)
 
     return markup
 
@@ -381,19 +408,24 @@ def start(message: Message):
     userID = message.from_user.id
     isDev = getIsDev(userID)
     
-    text = ""
+    text1 = ""
+    text2 = ""
 
     if isDev:
-        text = "Привет, разработчик! Я создан для того, чтобы студенты <b>Армавирского Техникума Технологии и Сервиса</b> могли узнать расписание в любое время!"
-    elif findIsTeacher(userID):
-        text = "Привет, преподаватель! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
-    elif findStudentIndex(userID) != -1:
-        text = "Привет, студент! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
-    else:
-        text = "Привет! Если ты студент <b>Армавирского Техникума Технологии и Сервиса</b>, то с помощью этого бота ты можешь узнать расписание в любое время!"
+        text2 = " (разработчик)"
+    elif getIsEditor(userID):
+        text2 = " (редактор)"
 
-    bot.send_message(message.chat.id, text, reply_markup=menu_keyboard(userID),
-                     parse_mode="html")
+    if findIsTeacher(userID):
+        text1 = ", преподаватель"
+    elif findStudentIndex(userID) != -1:
+        text1 = ", студент"
+
+    bot.send_message(
+        message.chat.id,
+        f"Привет<b>{text1}{text2}!</b> Я создан для того, чтобы студенты и преподаватели <b>Армавирского Техникума Технологии и Сервиса</b> могли узнать расписание в любое время!", reply_markup=menu_keyboard(userID),
+        parse_mode="html"
+    )
 
 
 @bot.message_handler()
@@ -484,16 +516,8 @@ def on_message(message: Message):
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
         urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, updatedData.groups_data_cur, updatedData.groups_data_next]
-        
-        
-
-        url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
-        url += json.dumps(urlData, ensure_ascii=False).replace(
-            "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
-        url += "customdataend"
 
         markup.row(
-            KeyboardButton(KeyboardButtons[2], web_app=WebAppInfo(url)),
             KeyboardButton(KeyboardButtons[3])
         )
         markup.row(
@@ -515,7 +539,27 @@ def on_message(message: Message):
             KeyboardButton(KeyboardButtons[16])
         )
 
-        bot.send_message(message.chat.id, getChatMessage("dev"), reply_markup=markup)
+        bot.send_message(message.chat.id, "Открыта панель администратора.", reply_markup=markup)
+    elif textIndex == 22:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+        urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, updatedData.groups_data_cur,
+                   updatedData.groups_data_next]
+
+        url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
+        url += json.dumps(urlData, ensure_ascii=False).replace(
+            "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
+        url += "customdataend"
+
+        markup.row(
+            KeyboardButton(KeyboardButtons[3])
+        )
+        markup.row(
+            KeyboardButton(KeyboardButtons[2], web_app=WebAppInfo(url))
+        )
+
+        bot.send_message(message.chat.id, "Открыта панель редактора.", reply_markup=markup)
+
     elif textIndex == 13 and isDev:
         bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
                          reply_markup=menu_keyboard(message.from_user.id))
@@ -1069,8 +1113,85 @@ from run_saver import RunSaver
 
 def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
     time.sleep(5)
-    
-    i = 0
+
+    nowTime = datetime.datetime.now().hour
+    lastTime = 0
+    if os.path.exists("lastHour"):
+        with open("lastHour", "r") as file:
+            lastTime = int(file.read())
+
+    if lastTime != nowTime:
+        curDay = datetime.datetime.now().isocalendar().weekday
+        for notify in updatedData.notifies:
+            parsed = json.loads(notify)
+            x1, x2, x3, x4 = parsed
+
+            groupID = findStudentGroup(x1)
+            if groupID == -1:
+                continue
+
+            if str(x2) != "False" and hoursList[x2] == nowTime:
+                try:
+                    dayIndex = curDay
+                    text = "завтра"
+                    if x2 <= 12:
+                        dayIndex -= 1
+                        text = "сегодня"
+                    if dayIndex < 6:
+                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                        curDay: group_data.DayData = curWeek[dayIndex]
+
+                        img = None
+                        if findIsTeacher(x1):
+                            img = imaginazer.toImageDayTeacher(
+                                teachersPairs[0][findTeacherIndex(x1)][dayIndex],
+                                days[dayIndex],
+                                updatedData.pairs,
+                                updatedData.groups
+                            )
+                        else:
+                            img = imaginazer.toImageDay(
+                                curDay,
+                                days[dayIndex],
+                                updatedData.pairs,
+                                updatedData.teachers
+                            )
+                        img.seek(0)
+                        bot.send_photo(x1, img, f"Вот пары на {text}")
+                except Exception:
+                    pass
+            if str(x3) != "False" and hoursList[x3] == nowTime and (
+                    (curDay == 7 and hoursList[x3] > 12) or (curDay == 1 and hoursList[x3] <= 12)):
+                try:
+                    dayNextText = "следующую"
+                    if curDay == 1: dayNextText = "эту"
+                    if updatedData.groups_data_next[groupID].count("[") < 10:
+                        bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
+                        continue
+                    img = None
+                    if findIsTeacher(x1):
+                        nextWeekInt = 1 if curDay == 7 else 0
+                        curWeek: group_data.WeekDataTeacher = teachersPairs[nextWeekInt][findTeacherIndex(x1)]
+                        img = imaginazer.toImageTeacher(
+                            curWeek,
+                            updatedData.pairs,
+                            updatedData.groups
+                        )
+                    else:
+                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+                        img = imaginazer.toImage(
+                            curWeek,
+                            updatedData.pairs,
+                            updatedData.teachers
+                        )
+                    img.seek(0)
+                    bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
+                except Exception:
+                    pass
+
+        with open("lastHour", "w") as file:
+            file.write(str(nowTime))
+
     e = -1
     
     while saver.running:
@@ -1083,85 +1204,6 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
                 bot.stop_bot()
                 raise Exception("BotRestartCommand")
 
-        if i == 0:
-            nowTime = datetime.datetime.now().hour
-            lastTime = 0
-            if os.path.exists("lastHour"):
-                with open("lastHour", "r") as file:
-                    lastTime = int(file.read())
-
-            if lastTime != nowTime:
-                curDay = datetime.datetime.now().isocalendar().weekday
-                for notify in updatedData.notifies:
-                    parsed = json.loads(notify)
-                    x1, x2, x3, x4 = parsed
-
-                    groupID = findStudentGroup(x1)
-                    if groupID == -1:
-                        continue
-
-                    if str(x2) != "False" and hoursList[x2] == nowTime:
-                        try:
-                            dayIndex = curDay
-                            text = "завтра"
-                            if x2 <= 12:
-                                dayIndex -= 1
-                                text = "сегодня"
-                            if dayIndex < 6:
-                                curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                                curDay: group_data.DayData = curWeek[dayIndex]
-
-                                img = None
-                                if findIsTeacher(x1):
-                                    img = imaginazer.toImageDayTeacher(
-                                        teachersPairs[0][findTeacherIndex(x1)][dayIndex],
-                                        days[dayIndex],
-                                        updatedData.pairs,
-                                        updatedData.groups
-                                    )
-                                else:
-                                    img = imaginazer.toImageDay(
-                                        curDay,
-                                        days[dayIndex],
-                                        updatedData.pairs,
-                                        updatedData.teachers
-                                    )
-                                img.seek(0)
-                                bot.send_photo(x1, img, f"Вот пары на {text}")
-                        except Exception:
-                            pass
-                    if str(x3) != "False" and hoursList[x3] == nowTime and ((curDay == 7 and hoursList[x3] > 12) or (curDay == 1 and hoursList[x3] <= 12)):
-                        try:
-                            dayNextText = "следующую"
-                            if curDay == 1: dayNextText = "эту"
-                            if updatedData.groups_data_next[groupID].count("[") < 10:
-                                bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
-                                continue
-                            img = None
-                            if findIsTeacher(x1):
-                                nextWeekInt = 1 if curDay == 7 else 0
-                                curWeek: group_data.WeekDataTeacher = teachersPairs[nextWeekInt][findTeacherIndex(x1)]
-                                img = imaginazer.toImageTeacher(
-                                    curWeek,
-                                    updatedData.pairs,
-                                    updatedData.groups
-                                )
-                            else:
-                                curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
-                                img = imaginazer.toImage(
-                                    curWeek,
-                                    updatedData.pairs,
-                                    updatedData.teachers
-                                )
-                            img.seek(0)
-                            bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
-                        except Exception:
-                            pass
-
-                with open("lastHour", "w") as file:
-                    file.write(str(nowTime))
-        i += 1
-        i %= 300
         updatedData.saveTimer -= 2
         time.sleep(2)                 # 10 minutes
 
