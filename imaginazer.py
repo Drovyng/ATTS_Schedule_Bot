@@ -263,7 +263,7 @@ def toImageDayTeacher(day:DayDataTeacher, dayText:str, getPairs:list[str], getGr
         imgDraw.text((s306 + offX, s65 + sizey * j + offY), groups[pair[1]], (0, 0, 0), font=font)
         imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
 
-    dayText2 = dayText + " | 1-й курс"
+    dayText2 = dayText + " | 1-я смена"
     imgDraw.text((int(sizeX/2 - font.getlength(dayText2) / 2) + offX, s10 + offY), dayText2, (0, 0, 0), font=font)
 
     imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
@@ -285,7 +285,7 @@ def toImageDayTeacher(day:DayDataTeacher, dayText:str, getPairs:list[str], getGr
         imgDraw.text((s306 + offX, s65 + sizey * j + offY), groups[pair[1]], (0, 0, 0), font=font)
         imgDraw.text((s532 + offX - font.getlength(cabinets[pair[2]])/2, s65 + sizey * j + offY), cabinets[pair[2]], (0, 0, 0), font=font)
 
-    dayText2 = dayText + " | 2-й курс"
+    dayText2 = dayText + " | 2-я смена"
     imgDraw.text((int(sizeX/2 - font.getlength(dayText2) / 2) + offX, s10 + offY), dayText2, (0, 0, 0), font=font)
 
     imgDraw.rectangle((offX, offY, sizeX + offX, s48 + offY), None, (100, 100, 100), width)
