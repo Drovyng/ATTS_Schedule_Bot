@@ -36,7 +36,9 @@ KeyboardButtons: list[str] = [
     "Выбрать Роль ⚡️",
     "Выбрать ФИО 🔆",
     "Сменить Роль ⚡️",
-    "Редактор 🧷"
+    "Редактор 🧷",
+    "Статистика",
+    "Список"
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -87,7 +89,6 @@ WorkModeButtons = [
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
-teacherGroup = "Преподаватель"
 modes = ["Студент 🙋🏻", "Преподаватель ⭐️"]
 
 import datetime
@@ -521,6 +522,10 @@ def on_message(message: Message):
             KeyboardButton(KeyboardButtons[3])
         )
         markup.row(
+            KeyboardButton(KeyboardButtons[23]),
+            KeyboardButton(KeyboardButtons[24])
+        )
+        markup.row(
             KeyboardButton(KeyboardButtons[7]),
             KeyboardButton(KeyboardButtons[8]),
             KeyboardButton(KeyboardButtons[9])
@@ -559,6 +564,49 @@ def on_message(message: Message):
         )
 
         bot.send_message(message.chat.id, "Открыта панель редактора.", reply_markup=markup)
+
+    elif textIndex == 23 and isDev:
+        notifyCount = 0
+        for notify in updatedData.notifies:
+            if notify.lower().count("false") < 3:
+                notifyCount += 1
+
+        groups_students: dict[str, int] = {}
+
+        for i in range(updatedData.studentsCount):
+            grpId = json.loads(updatedData.students[i])[1]
+            if not grpId in groups_students:
+                groups_students[grpId] = 1
+            else:
+                groups_students[grpId] = groups_students[grpId] + 1
+
+        for grp in updatedData.groups:
+            if not grp in groups_students:
+                groups_students[grp] = 0
+
+        textAdd = ""
+        for grp in groups_students:
+            textAdd += f"\n[{grp}]: {groups_students[grp]}"
+            if len(textAdd) >= 3980:
+                break
+        bot.send_message(message.chat.id, f"Вот Статистика:\n  Уведомления: {notifyCount}\n  Группы:{textAdd}", reply_markup=menu_keyboard(userID))
+
+    elif textIndex == 24 and isDev:
+        textAdd = ""
+
+        for stud in updatedData.students:
+            parsed = json.loads(stud)
+            user_name = parsed[0]
+            try:
+                user_name = bot.get_chat_member(parsed[0], parsed[0]).user.username
+            except:
+                pass
+            textAdd += f"\n<a href='tg://user?id={parsed[0]}'>@{user_name}</a> - {parsed[1]}"
+            if parsed[1] == "Teacher":
+                textAdd += f" - {parsed[2]}"
+            if len(textAdd) >= 3980:
+                break
+        bot.send_message(message.chat.id, f"Вот Список:{textAdd}", reply_markup=menu_keyboard(userID), parse_mode="HTML")
 
     elif textIndex == 13 and isDev:
         bot.send_message(message.chat.id, f"Бот в процессе перезагрузки!",
@@ -1077,21 +1125,32 @@ def on_webapp_msg(message):
 
     updatedData.check()
 
-    if nextWeek:
-        updatedData.groups_data_next[groupIndex] = weekDataJson
-    else:
-        updatedData.groups_data_cur[groupIndex] = weekDataJson
-        
+    lastTeachers = teachersPairs[:]
+
+    (updatedData.groups_data_next if nextWeek else updatedData.groups_data_cur)[groupIndex] = weekDataJson
+
+    recalculateTeachersPairsAll()
+
+    if not nextWeek:
         for notify in updatedData.notifies:
             parsed = json.loads(notify)
             x1, x2, x3, x4 = parsed
             
             studentGroup = findStudentGroup(x1)
+            isTeacher = findIsTeacher(x1)
             
-            if studentGroup == groupIndex and x4 == True:
+            if (studentGroup == groupIndex or isTeacher) and x4 == True:
                 img = None
-                if studentGroup == teacherGroup:
-                    pass
+                if isTeacher:
+                    index = findTeacherIndex(x1)
+                    if lastTeachers[0][index] != teachersPairs[0][index]:
+                        img = imaginazer.toImageTeacher(
+                            teachersPairs[0][index],
+                            updatedData.pairs,
+                            updatedData.teachers
+                        )
+                    else:
+                        continue
                 else:
                     img = imaginazer.toImage(
                         weekData,
