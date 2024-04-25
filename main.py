@@ -1105,92 +1105,98 @@ def on_webapp_msg(message):
 
     bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
 
+import os
 
+nowTime = datetime.datetime.now().hour
+lastTime = 0
+if os.path.exists("lastHour"):
+    with open("lastHour", "r") as file:
+        lastTime = int(file.read())
 
-import threading, time, os
-from run_saver import RunSaver
+if lastTime != nowTime:
+    curDay = datetime.datetime.now().isocalendar().weekday
+    for notify in updatedData.notifies:
+        parsed = json.loads(notify)
+        x1, x2, x3, x4 = parsed
 
+        groupID = findStudentGroup(x1)
+        if groupID == -1:
+            continue
 
-def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list[int], daysList: list[str]):
-    time.sleep(5)
+        if str(x2) != "False" and NotifyButtonsTimesInt[x2] == nowTime:
+            try:
+                dayIndex = curDay
+                text = "завтра"
+                addEndText = ""
+                if x2 <= 12:
+                    dayIndex -= 1
+                    text = "сегодня"
+                if dayIndex < 6:
+                    curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                    curDay: group_data.DayData = curWeek[dayIndex]
 
-    nowTime = datetime.datetime.now().hour
-    lastTime = 0
-    if os.path.exists("lastHour"):
-        with open("lastHour", "r") as file:
-            lastTime = int(file.read())
-
-    if lastTime != nowTime:
-        curDay = datetime.datetime.now().isocalendar().weekday
-        for notify in updatedData.notifies:
-            parsed = json.loads(notify)
-            x1, x2, x3, x4 = parsed
-
-            groupID = findStudentGroup(x1)
-            if groupID == -1:
-                continue
-
-            if str(x2) != "False" and hoursList[x2] == nowTime:
-                try:
-                    dayIndex = curDay
-                    text = "завтра"
-                    if x2 <= 12:
-                        dayIndex -= 1
-                        text = "сегодня"
-                    if dayIndex < 6:
-                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                        curDay: group_data.DayData = curWeek[dayIndex]
-
-                        img = None
-                        if findIsTeacher(x1):
-                            img = imaginazer.toImageDayTeacher(
-                                teachersPairs[0][findTeacherIndex(x1)][dayIndex],
-                                days[dayIndex],
-                                updatedData.pairs,
-                                updatedData.groups
-                            )
-                        else:
-                            img = imaginazer.toImageDay(
-                                curDay,
-                                days[dayIndex],
-                                updatedData.pairs,
-                                updatedData.teachers
-                            )
-                        img.seek(0)
-                        bot.send_photo(x1, img, f"Вот пары на {text}")
-                except Exception:
-                    pass
-            if str(x3) != "False" and hoursList[x3] == nowTime and (
-                    (curDay == 7 and hoursList[x3] > 12) or (curDay == 1 and hoursList[x3] <= 12)):
-                try:
-                    dayNextText = "следующую"
-                    if curDay == 1: dayNextText = "эту"
-                    if updatedData.groups_data_next[groupID].count("[") < 10:
-                        bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
-                        continue
                     img = None
                     if findIsTeacher(x1):
-                        nextWeekInt = 1 if curDay == 7 else 0
-                        curWeek: group_data.WeekDataTeacher = teachersPairs[nextWeekInt][findTeacherIndex(x1)]
-                        img = imaginazer.toImageTeacher(
-                            curWeek,
+                        img = imaginazer.toImageDayTeacher(
+                            teachersPairs[0][findTeacherIndex(x1)][dayIndex],
+                            days[dayIndex],
                             updatedData.pairs,
                             updatedData.groups
                         )
                     else:
-                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
-                        img = imaginazer.toImage(
-                            curWeek,
+                        img = imaginazer.toImageDay(
+                            curDay,
+                            days[dayIndex],
                             updatedData.pairs,
                             updatedData.teachers
                         )
+                        addEndText = f"\nПриходить к {max(0, curDay[0])+1}-й паре!"
                     img.seek(0)
-                    bot.send_photo(x1, img, f"🔔 Вот пары на следующую неделю 🔔")
-                except Exception:
-                    pass
+                    bot.send_photo(x1, img, f"Вот пары на {text}{addEndText}")
+            except Exception:
+                pass
+        if str(x3) != "False" and NotifyButtonsTimesInt[x3] == nowTime and (
+                (curDay == 7 and NotifyButtonsTimesInt[x3] > 12) or (curDay == 1 and NotifyButtonsTimesInt[x3] <= 12)):
+            try:
+                dayNextText = "следующую"
+                if curDay != 7:
+                    dayNextText = "эту"
+                groups_data_where = updatedData.groups_data_next if curDay == 7 else updatedData.groups_data_cur
+                if groups_data_where[groupID].count("[") < 10:
+                    bot.send_message(x1, f"🔔 Извините, но расписание на {dayNextText} неделю ещё недоступно :( 🔔")
+                    continue
+                img = None
+                if findIsTeacher(x1):
+                    nextWeekInt = 1 if curDay == 7 else 0
+                    curWeek: group_data.WeekDataTeacher = teachersPairs[nextWeekInt][findTeacherIndex(x1)]
+                    img = imaginazer.toImageTeacher(
+                        curWeek,
+                        updatedData.pairs,
+                        updatedData.groups
+                    )
+                else:
+                    curWeek: group_data.WeekData = group_data.loadWeek(groups_data_where[groupID])
+                    img = imaginazer.toImage(
+                        curWeek,
+                        updatedData.pairs,
+                        updatedData.teachers
+                    )
+                img.seek(0)
+                bot.send_photo(x1, img, f"🔔 Вот пары на {dayNextText} неделю 🔔")
+            except Exception:
+                pass
 
-        with open("lastHour", "w") as file:
-            file.write(str(nowTime))
+    with open("lastHour", "w") as file:
+        file.write(str(nowTime))
+
+
+
+import threading, time
+from run_saver import RunSaver
+
+
+def thread_check_time(saver: RunSaver, updatedData: UpdatedData):
+    time.sleep(5)
 
     e = -1
     
@@ -1210,6 +1216,6 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData, hoursList: list
 
 def run_bot(saver: RunSaver):
     
-    threading.Thread(target=thread_check_time, args=(saver, updatedData, NotifyButtonsTimesInt, days)).start()
+    threading.Thread(target=thread_check_time, args=(saver, updatedData)).start()
 
     bot.polling(non_stop=True)
