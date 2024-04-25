@@ -516,8 +516,6 @@ def on_message(message: Message):
     elif textIndex == 1 and isDev:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
-        urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, updatedData.groups_data_cur, updatedData.groups_data_next]
-
         markup.row(
             KeyboardButton(KeyboardButtons[3])
         )
@@ -1162,7 +1160,68 @@ def on_webapp_msg(message):
                 
     
 
-    bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=menu_keyboard(message.from_user.id))
+    bot.send_message(message.chat.id, f"Данные успешно применены!")
+
+import traceback
+
+@bot.message_handler(content_types=['document'])
+def handle_docs_photo(message: Message):
+    global updatedData, KeyboardButtons
+    import exel_file_parser
+    try:
+        userID = message.from_user.id
+
+        if not getIsEditor(userID) or not message.document.file_name.endswith(".xls"):
+            return
+
+        bot.send_message(message.chat.id, f"Загрузка файла {message.document.file_name}")
+
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+
+        bot.send_message(message.chat.id, "Файл Загружен! Парсим...")
+
+        data = exel_file_parser.try_get_data(downloaded_file, updatedData.pairs, updatedData.teachers)
+
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+        for grpData in data:
+            grpName, week = grpData
+            img = imaginazer.toImage(
+                week,
+                updatedData.pairs,
+                updatedData.teachers
+            )
+            img.seek(0)
+            bot.send_photo(message.chat.id, img, grpName)
+
+            urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [json.dumps(week)], 1]
+
+            url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
+            url += json.dumps(urlData, ensure_ascii=False).replace(
+                "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
+            url += "customdataend"
+            print(url)
+            markup.row(KeyboardButton(grpName, web_app=WebAppInfo(url)))
+
+        markup.row(KeyboardButtons[3])
+
+        bot.send_message(message.chat.id, "А теперь загружайте!", reply_markup=markup)
+
+
+    except exel_file_parser.ParseDataError as err:
+        print(err)
+        bot.send_message(message.chat.id, "⚠️ ОШИБКА ПАРСИНГА!!! ⚠️")
+        bot.send_message(message.chat.id, str(err))
+
+    except Exception:
+        err = traceback.format_exc(4, True)
+        print(err)
+        bot.send_message(message.chat.id, "Что-то Сломалось...")
+        bot.send_message(message.chat.id, err)
+
+
+
 
 import os
 
