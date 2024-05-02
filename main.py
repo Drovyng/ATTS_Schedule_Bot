@@ -1278,7 +1278,7 @@ def handle_docs_photo(message: Message):
         markup.row(KeyboardButtons[3])
 
         bot.send_message(message.chat.id, "Выберите, затем нажмите для загрузки...", reply_markup=markup)
-        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks, -1)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks)
 
 
     except exel_file_parser.ParseDataError as err:
@@ -1293,7 +1293,10 @@ def handle_docs_photo(message: Message):
         bot.send_message(message.chat.id, err)
 
 
-def button_docs_photo(message: Message, dataNames, dataWeeks, selected):
+def button_docs_photo(message: Message, dataNames, dataWeeks):
+
+    if not message.web_app_data is None and not message.web_app_data.data is None:
+        on_webapp_msg(message)
 
     if message.text.replace(">> ", "") in dataNames:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -1318,7 +1321,7 @@ def button_docs_photo(message: Message, dataNames, dataWeeks, selected):
         markup.row(KeyboardButtons[3])
 
         bot.send_message(message.chat.id, "Выберите, затем нажмите для загрузки...", reply_markup=markup)
-        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks, selected)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks)
         return
 
     start(message)
