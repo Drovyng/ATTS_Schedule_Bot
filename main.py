@@ -441,9 +441,9 @@ def on_message(message: Message):
 
                 reply_chat = reply_data[1]
 
-                text = f"Ответ по обращению [{reply_chat}-{reply_data[2]}]\n{text}"
+                text = f"<b>Ответ по обращению [{reply_chat}-{reply_data[2]}]:</b>\n{text}"
 
-                bot.send_message(reply_chat, text)
+                bot.send_message(reply_chat, text, parse_mode="html")
 
                 bot.send_message(message.chat.id, "Ответ успешно отправлен!")
                 return
@@ -684,7 +684,19 @@ def on_message(message: Message):
         bot.send_message(message.chat.id, f"Сейчас пары добавлены на группы:{addText}", reply_markup=menu_keyboard(userID))
 
     elif textIndex == 26:
-        bot.send_message(message.chat.id, f"Выберите тип обращения:", reply_markup=btnsMarkup(FeedbackButtons, 3))
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.row(
+            KeyboardButton(FeedbackButtons[1]),
+            KeyboardButton(FeedbackButtons[2])
+        )
+        markup.row(
+            KeyboardButton(FeedbackButtons[2]),
+            KeyboardButton(FeedbackButtons[3])
+        )
+        markup.row(
+            KeyboardButton(FeedbackButtons[0])
+        )
+        bot.send_message(message.chat.id, f"Выберите тип обращения:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, feedback_select)
 
     elif textIndex >= 7 and textIndex < 13 and isDev:
@@ -747,21 +759,21 @@ def feedback_select(message: Message):
 
 def feedback_print(message: Message, getType: int):
     text = message.text
-    text = f"Обращение типа [{FeedbackButtons[getType]}]\nИдентификатор: #{message.chat.id}#{message.message_id}#\nОтветьте на это сообщение для ответа!\n{text}"
+    text = f"<b>Обращение типа [{FeedbackButtons[getType]}]\nИдентификатор: #{message.chat.id}#{message.message_id}#\nОтветьте на это сообщение для ответа!</b>\n{text}"
     count = 0
     for i in config.developers:
         try:
-            bot.send_message(i, text)
+            bot.send_message(i, text, parse_mode="html")
             count += 1
         except:
             pass
     for i in updatedData.admins:
         try:
-            bot.send_message(i, text)
+            bot.send_message(i, text, parse_mode="html")
             count += 1
         except:
             pass
-    bot.send_message(message.chat.id, f"Ваше обращение было отправлено {count} администраторам! Идентификатор обращения: #{message.chat.id}-{message.message_id}#")
+    bot.send_message(message.chat.id, f"Ваше обращение было отправлено {count} администраторам! Идентификатор обращения: [{message.chat.id}-{message.message_id}]")
 
 
 def mode_select(message: Message):
