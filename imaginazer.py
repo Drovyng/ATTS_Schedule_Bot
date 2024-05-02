@@ -9,6 +9,7 @@ cabinets.insert(0, "биб.")
 cabinets.insert(0, "сп.зал")
 cabinets.append("кл.мк.")
 cabinets.append("к/с")
+cabinets.append("р/ц")
 cabinets.append("")
 
 def getScreenshot() -> BytesIO:
