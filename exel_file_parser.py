@@ -94,8 +94,10 @@ def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]
         result[2] = 0
     elif c.startswith("б"):
         result[2] = 1
-    elif c.count("\\") > 0 or c.count("км") > 0:
+    elif c.count("к") > 0 and c.count("м") > 0 and c.index("к")+3 > c.index("м"):
         result[2] = 27
+    elif c.count("к") > 0 and c.count("с") > 0 and c.index("к")+3 > c.index("с"):
+        result[2] = 28
     elif c.endswith(".0"):
         lol = int(float(c))
         if lol < 0:

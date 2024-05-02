@@ -1266,28 +1266,19 @@ def handle_docs_photo(message: Message):
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
+        dataNames = []
+        dataWeeks = []
+
         for grpData in data:
             grpName, week = grpData
-            img = imaginazer.toImage(
-                week,
-                updatedData.pairs,
-                updatedData.teachers
-            )
-            img.seek(0)
-            bot.send_photo(message.chat.id, img, grpName)
-
-            urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [json.dumps(week)], 1]
-
-            url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
-            url += json.dumps(urlData, ensure_ascii=False).replace(
-                "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
-            url += "customdataend"
-            print(url)
-            markup.row(KeyboardButton(grpName, web_app=WebAppInfo(url)))
+            dataNames.append(grpName)
+            dataWeeks.append(week)
+            markup.row(KeyboardButton(grpName))
 
         markup.row(KeyboardButtons[3])
 
-        bot.send_message(message.chat.id, "А теперь загружайте!", reply_markup=markup)
+        bot.send_message(message.chat.id, "Выберите, затем нажмите для загрузки...", reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks, -1)
 
 
     except exel_file_parser.ParseDataError as err:
@@ -1302,6 +1293,35 @@ def handle_docs_photo(message: Message):
         bot.send_message(message.chat.id, err)
 
 
+def button_docs_photo(message: Message, dataNames, dataWeeks, selected):
+
+    if message.text.replace(">> ", "") in dataNames:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+        selected = dataNames.index(message.text.replace(">> ", ""))
+
+        for i in range(len(dataNames)):
+            grpName, week = dataNames[i], dataWeeks[i]
+
+            if i == selected:
+                urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [json.dumps(week)], 1]
+
+                url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
+                url += json.dumps(urlData, ensure_ascii=False).replace(
+                    "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
+                url += "customdataend"
+                print(url)
+                markup.row(KeyboardButton(">> " + grpName, web_app=WebAppInfo(url)))
+            else:
+                markup.row(KeyboardButton(grpName))
+
+        markup.row(KeyboardButtons[3])
+
+        bot.send_message(message.chat.id, "Выберите, затем нажмите для загрузки...", reply_markup=markup)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks, selected)
+        return
+
+    start(message)
 
 
 import os
