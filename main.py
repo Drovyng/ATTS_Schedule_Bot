@@ -1303,8 +1303,10 @@ def handle_docs_photo(message: Message):
 def button_docs_photo(message: Message, dataNames, dataWeeks):
 
     try:
-        if message.text is None and not message.web_app_data is None and not message.web_app_data.data is None:
-            handle_webapp_msg(message, dataNames, dataWeeks)
+        if message.text is None:
+            if not message.web_app_data is None and not message.web_app_data.data is None:
+                handle_webapp_msg(message, dataNames, dataWeeks)
+            return
     except:
         pass
     if message.text.replace(">> ", "") in dataNames:
