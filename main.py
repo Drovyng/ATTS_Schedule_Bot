@@ -1186,6 +1186,9 @@ def select_group(message: Message, course:int):
 
 @bot.message_handler(content_types=["web_app_data"])
 def on_webapp_msg(message):
+    handle_webapp_msg(message, None, None)
+
+def handle_webapp_msg(message, dataNames, dataWeeks):
     global updatedData
     data = group_data.loadWeekWeb(message.web_app_data.data)
     groupIndex = data[0]
@@ -1242,6 +1245,10 @@ def on_webapp_msg(message):
 
     bot.send_message(message.chat.id, f"Данные успешно применены!")
 
+    if not dataNames is None:
+        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks)
+
+
 
 import traceback
 
@@ -1297,7 +1304,7 @@ def button_docs_photo(message: Message, dataNames, dataWeeks):
 
     try:
         if message.text is None and not message.web_app_data is None and not message.web_app_data.data is None:
-            on_webapp_msg(message)
+            handle_webapp_msg(message, dataNames, dataWeeks)
     except:
         pass
     if message.text.replace(">> ", "") in dataNames:
