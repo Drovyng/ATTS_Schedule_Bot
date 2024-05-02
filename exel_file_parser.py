@@ -83,7 +83,7 @@ def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]
     result = [-1, -1, -1]
     p, t, c = value
 
-    с = c.lower()
+    c = c.lower()
 
     result[0] = get_list_index(p, pairs)
     result[1] = get_list_index(t, teachers)
