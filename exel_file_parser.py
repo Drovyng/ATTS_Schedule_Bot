@@ -63,8 +63,6 @@ def get_list_index(value: str, values: list[str]) -> int:
         return -1
     if value.count("\n") > 0 or value.count("   ") > 0:
         value = "Несколько"
-    if value.lower().count("км") > 0:
-        value = "Карла Маркса"
 
     best = 0
     bestI = 0
@@ -96,7 +94,7 @@ def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]
         result[2] = 0
     elif c.startswith("б"):
         result[2] = 1
-    elif c.count("\\") > 0:
+    elif c.count("\\") > 0 or c.count("км") > 0:
         result[2] = 27
     elif c.endswith(".0"):
         lol = int(float(c))
