@@ -49,11 +49,13 @@ def groups_scan(worksheet: Sheet, y: int) -> list[int]:
 
 def get_pair(worksheet: Sheet, x: int, y: int) -> PairDataStr:
 
-    return (
+    to_return = (
         str(worksheet.cell(y, x).value),
         str(worksheet.cell(y, x + 1).value),
         str(worksheet.cell(y, x + 2).value)
     )
+
+    return to_return
 
 
 def get_list_index(value: str, values: list[str]) -> int:
@@ -116,22 +118,38 @@ def try_get_data(file: bytes, pairs: list[str], teachers: list[str]) -> list[Gro
         raise ParseDataError("Дней Меньше Шести!")
     groups_indices = groups_scan(worksheet, startY)
 
+
     week_datas: list[GroupData] = []
 
-    for g in range(len(groups_indices)):
-        week_data = group_data.WeekDataEmpty[:]
+    gi = -1
+    for g in groups_indices:
+        gi += 1
+        week_data = [[0, [-1, -1, -1], [-1, -1, -1], [-1, -1, -1]][:] for i in range(6)]
         for d in range(6):
-            getPairs = []
+            hell = 0
+            offs = 0
             for i in range(days_lens[d]):
-                pair = pair_str_to_normal(get_pair(worksheet, groups_indices[g], days_indices[d] + i), pairs, teachers)
-                if (pair)[0] == -1:
-                    week_data[d][0] += 1
-                else:
-                    getPairs.append(pair)
+                pair = pair_str_to_normal(get_pair(worksheet, g, days_indices[d] + i), pairs, teachers)
+                if hell < 3:
+                    if pair[0] == -1:
+                        offs += 1
+                    else:
+                        hell += 1
+                        week_data[d][hell] = pair
+                week_data[d][0] = min(offs, hell)
 
-            if len(getPairs) >= 1: week_data[d][1] = getPairs[0]
-            if len(getPairs) >= 2: week_data[d][2] = getPairs[1]
-            if len(getPairs) >= 3: week_data[d][3] = getPairs[2]
+        week_datas.append((str(worksheet.cell(startY, g).value), week_data))
 
-        week_datas.append((str(worksheet.cell(startY, groups_indices[g]).value), week_data))
     return week_datas
+
+# from PIL import
+# import imaginazer
+#
+# with open("C:\\Users\\информатика\\Desktop\\test.xls", "rb") as file:
+#     pairs = ['Информатика', 'Математика', 'Физика', 'Русский язык', 'Литература', 'Химия', 'Основы Безопасности Жизнедеятельности', 'Обществознание', 'История', 'Иностранный язык', 'Физическая культура', 'Биология', 'География', 'Экономика', 'Основы микробиологии, физиологии питания, санитарии и гигиены', 'Техническое оснащение и организация рабочего места', 'МДК.01.01', 'Охрана труда', 'Основы товароведения продовольственных товаров', 'Технология слесарных работ', 'Допуски и технические измерения', 'Основы электротехники', 'Индивидуальный проект', 'Производственная практика', 'Учебная практика', 'Рисунок и живопись', 'Безопасность жизнедеятельности', 'МДК.02.02', 'Художественная резка овощей и фруктов', 'Организация обслуживания', 'Астрономия', 'Метрология и стандартизация', 'Автоматизация технологических процессов', 'Правовые основы профессиональной деятельности', 'МДК.01.02', 'Психология общения', 'Социальная адаптация и основы социально-правовых знаний', 'Основы технической графики', 'Основы материаловедения', 'Экономические и правовые основы производственной деятельности', 'МДК.03.01', 'Основы предпринимательской деятельности', 'Несколько']
+#     teachers = ['Быленко М.И.', 'Борисова И.В.', 'Пасмурнова Е.М.', 'Плешкова О.Г.', 'Алексеева М.В.', 'Горелова Е.Н.', 'Комина Н.С.', 'Шумков М.А.', 'Аулова А.А.', 'Слюнякова И.В.', 'Якубовская Е.В.', 'Вертикова А.А.', 'Федорова Е.С.', 'Лукьянченко А.Е.', 'Воропаева М.В.', 'Миляева Ю.А.', 'Хитрова С.В.', 'Бекетов С.И.', 'Крышталева М.М.', 'Баранцова Ю.А.', 'Ковалева Н.Ю.', 'Такмазян В.П.', 'Согомонян А.А.', 'Шушарина В.В.', 'Бадоева Ю.А.', 'Агамирзоева В.А.', 'Шамота А.С.', 'Зайцева Г.Н.', 'Ашева Н.А.', 'Ломакина М.А.', 'Квочка В.В.', 'Матвеева Е.В.', 'Оленец Н.А.', 'Чикова А.Б.', 'Водинов К.Н.', 'Махова М.А.', 'Тороп И.А.', 'Несколько', 'Володько Е.В.', 'Костенко В.В.']
+#     name, data = try_get_data(file.read(), pairs, teachers)[0]
+#     print(data)
+#     img = imaginazer.toImage(data, pairs, teachers)
+#     Image.open(img).show("ljfsgsd")
+#     #.fromarray(img).show("ljfsgsd")
