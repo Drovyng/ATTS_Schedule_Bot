@@ -4,10 +4,6 @@ import config
 import group_data, sheets, json
 import imaginazer
 
-ChatMessages: dict[str, Union[str, list, tuple]] = {
-    "dev": "Включён режим разработчика"
-}
-
 KeyboardButtons: list[str] = [
     "Выбрать Группу 🗒",
     "Админ 🔧",
@@ -38,7 +34,10 @@ KeyboardButtons: list[str] = [
     "Сменить Роль ⚡️",
     "Редактор 🧷",
     "Статистика",
-    "Список"
+    "Список",
+
+    "Список 📋",         # 25 index
+    "Обратная связь 📝"  # 26 index
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -279,18 +278,6 @@ from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppIn
 bot = telebot.TeleBot(config.bot_token)
 
 
-def getChatMessage(key: str, isDev: bool = False):
-    global ChatMessages
-
-    msg = ChatMessages[key]
-    if isinstance(msg, list | tuple):
-        if isDev and len(msg) > 1:
-            return msg[1]
-        else:
-            return msg[0]
-    else:
-        return msg
-
 
 def findStudent(userID) -> list:
     global updatedData
@@ -525,13 +512,13 @@ def on_message(message: Message):
         )
         markup.row(
             KeyboardButton(KeyboardButtons[7]),
-            KeyboardButton(KeyboardButtons[8]),
-            KeyboardButton(KeyboardButtons[9])
+            KeyboardButton(KeyboardButtons[9]),
+            KeyboardButton(KeyboardButtons[11])
         )
         markup.row(
-            KeyboardButton(KeyboardButtons[10]),
-            KeyboardButton(KeyboardButtons[11]),
-            KeyboardButton(KeyboardButtons[12])
+            #KeyboardButton(KeyboardButtons[10]),
+            #KeyboardButton(KeyboardButtons[8]),
+            #KeyboardButton(KeyboardButtons[12])
         )
         markup.row(
             KeyboardButton(KeyboardButtons[13]),
@@ -660,10 +647,20 @@ def on_message(message: Message):
         bot.send_message(message.chat.id, "Выберите режим:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, mode_select)
 
+    elif textIndex == 25:
+        addText = ""
+        for grp in range(updatedData.groupsCount):
+            yesno = 0 if updatedData.groups_data_cur[grp].count("[") < 10 else 1
+            addText += f"\n{updatedData.groups[grp]} - {truefalseEmoji[yesno]}"
+        bot.send_message(message.chat.id, f"Сейчас пары добавлены на группы:{addText}", reply_markup=menu_keyboard(userID))
+
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
         if not isAdd:
+            bot.send_message(message.chat.id, "Данная функция отключена!", reply_markup=menu_keyboard(userID))
+            return
+
             markup = ReplyKeyboardMarkup(resize_keyboard=True)
             strList = []
             if isWhat == 0:
@@ -1116,8 +1113,9 @@ def on_webapp_msg(message):
     nextWeek = data[1] == 1
 
     weekData: group_data.WeekData = [
-        data[2], data[3], data[4],
-        data[5], data[6], data[7]
+        data[2], data[3],
+        data[4], data[5],
+        data[6], data[7]
     ]
     weekDataJson = group_data.saveWeek(weekData)
 
