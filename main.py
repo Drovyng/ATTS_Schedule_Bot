@@ -87,10 +87,10 @@ WorkModeButtons = [
 ]
 FeedbackButtons = [
     KeyboardButtons[3],
-    "Вопрос",
-    "Ошибка",
-    "Предложение",
-    "Другое"
+    "Вопрос ❓",
+    "Ошибка 🚫",
+    "Предложение 🤔",
+    "Другое 🌐"
 ]
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
@@ -690,8 +690,8 @@ def on_message(message: Message):
             KeyboardButton(FeedbackButtons[2])
         )
         markup.row(
-            KeyboardButton(FeedbackButtons[2]),
-            KeyboardButton(FeedbackButtons[3])
+            KeyboardButton(FeedbackButtons[3]),
+            KeyboardButton(FeedbackButtons[4])
         )
         markup.row(
             KeyboardButton(FeedbackButtons[0])
