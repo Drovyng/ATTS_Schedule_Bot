@@ -1295,9 +1295,11 @@ def handle_docs_photo(message: Message):
 
 def button_docs_photo(message: Message, dataNames, dataWeeks):
 
-    if not message.web_app_data is None and not message.web_app_data.data is None:
-        on_webapp_msg(message)
-
+    try:
+        if message.text is None and not message.web_app_data is None and not message.web_app_data.data is None:
+            on_webapp_msg(message)
+    except:
+        pass
     if message.text.replace(">> ", "") in dataNames:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
