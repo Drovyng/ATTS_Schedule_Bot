@@ -85,6 +85,13 @@ WorkModeButtons = [
     "Преподаватель 🔆",
     KeyboardButtons[3]
 ]
+FeedbackButtons = [
+    KeyboardButtons[3],
+    "Вопрос",
+    "Ошибка",
+    "Предложение",
+    "Другое"
+]
 truefalseEmoji = ["❌", "✅"]
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", KeyboardButtons[3], "Сегодня", "Завтра"]
 
@@ -350,9 +357,13 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
         groupBtnName = KeyboardButtons[20] if findIsTeacher(userID) else KeyboardButtons[0]
         markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]),
                    KeyboardButton(groupBtnName))
+
+    if isInGroup:
+        markup.row(KeyboardButton(KeyboardButtons[25]), KeyboardButton(KeyboardButtons[26]))
         markup.row(KeyboardButton(KeyboardButtons[21]), KeyboardButton(KeyboardButtons[17]))
     else:
         markup.row(KeyboardButton(KeyboardButtons[19]))
+        markup.row(KeyboardButton(KeyboardButtons[26]))
 
     btns = []
     if getIsEditor(userID):
@@ -420,11 +431,29 @@ def start(message: Message):
 def on_message(message: Message):
     global KeyboardButtons, updatedData
 
+    text = message.text
+
+    try:
+        if message.reply_to_message != None and message.reply_to_message.from_user.is_bot:
+            reply_text = message.reply_to_message.text
+            if reply_text.count("#") >= 3:
+                reply_data = reply_text.split("#")
+
+                reply_chat = reply_data[1]
+
+                text = f"Ответ по обращению [{reply_chat}-{reply_data[2]}]\n{text}"
+
+                bot.send_message(reply_chat, text)
+
+                bot.send_message(message.chat.id, "Ответ успешно отправлен!")
+                return
+    except:
+        pass
+
     updatedData.check()
 
     userID = message.from_user.id
     isDev = getIsDev(userID)
-    text = message.text
 
     textIndex = -1
     if KeyboardButtons.count(text) > 0:
@@ -515,11 +544,11 @@ def on_message(message: Message):
             KeyboardButton(KeyboardButtons[9]),
             KeyboardButton(KeyboardButtons[11])
         )
-        markup.row(
+        #markup.row(
             #KeyboardButton(KeyboardButtons[10]),
             #KeyboardButton(KeyboardButtons[8]),
             #KeyboardButton(KeyboardButtons[12])
-        )
+        #)
         markup.row(
             KeyboardButton(KeyboardButtons[13]),
         )
@@ -654,6 +683,10 @@ def on_message(message: Message):
             addText += f"\n{updatedData.groups[grp]} - {truefalseEmoji[yesno]}"
         bot.send_message(message.chat.id, f"Сейчас пары добавлены на группы:{addText}", reply_markup=menu_keyboard(userID))
 
+    elif textIndex == 26:
+        bot.send_message(message.chat.id, f"Выберите тип обращения:", reply_markup=btnsMarkup(FeedbackButtons, 3))
+        bot.register_next_step_handler_by_chat_id(message.chat.id, feedback_select)
+
     elif textIndex >= 7 and textIndex < 13 and isDev:
         isAdd = textIndex % 2 == 1
         isWhat = (textIndex - 7) // 2
@@ -695,11 +728,46 @@ def on_message(message: Message):
 
         bot.register_next_step_handler_by_chat_id(message.chat.id, dev_action, isAdd, isWhat, False, None)
 
+
+def feedback_select(message: Message):
+    global updatedData, NotifyButtons, KeyboardButtons, FeedbackButtons
+
+    text = message.text
+    userID = message.from_user.id
+
+    if text == FeedbackButtons[0]:
+        start(message)
+        return
+    if text in FeedbackButtons:
+        bot.send_message(message.chat.id, f"Теперь напишите само обращение:", reply_markup=None)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, feedback_print, FeedbackButtons.index(text))
+        return
+    bot.send_message(message.chat.id, f"Неверный тип [{text}]!")
+
+
+def feedback_print(message: Message, getType: int):
+    text = message.text
+    text = f"Обращение типа [{FeedbackButtons[getType]}]\nИдентификатор: #{message.chat.id}#{message.message_id}#\nОтветьте на это сообщение для ответа!\n{text}"
+    count = 0
+    for i in config.developers:
+        try:
+            bot.send_message(i, text)
+            count += 1
+        except:
+            pass
+    for i in updatedData.admins:
+        try:
+            bot.send_message(i, text)
+            count += 1
+        except:
+            pass
+    bot.send_message(message.chat.id, f"Ваше обращение было отправлено {count} администраторам! Идентификатор обращения: #{message.chat.id}-{message.message_id}#")
+
+
 def mode_select(message: Message):
     global updatedData, NotifyButtons, KeyboardButtons, WorkModeButtons
 
     text = message.text
-    userID = message.from_user.id
 
     if text == KeyboardButtons[3]:
         start(message)
@@ -826,7 +894,7 @@ def get_pair_day(message: Message):
         bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
         return
 
-    curDay = datetime.datetime.now().isocalendar().weekday;
+    curDay = datetime.datetime.now().isocalendar().weekday
     dayIndex = 0
     if text == "Сегодня":
         if curDay == 7:
@@ -903,6 +971,8 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                 
                 bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!",
                                  reply_markup=menu_keyboard(userID))
+
+                updatedData.saveAll()
             else:
                 if isWhat == 0:
                     if updatedData.groups.count(name) == 0:
@@ -1155,10 +1225,11 @@ def on_webapp_msg(message):
                     )
                 img.seek(0)
                 bot.send_photo(x1, img, f"⚠️ Пары на эту неделю были обновлены! ⚠️")
-                
-    
+
+    updatedData.saveAll()
 
     bot.send_message(message.chat.id, f"Данные успешно применены!")
+
 
 import traceback
 
