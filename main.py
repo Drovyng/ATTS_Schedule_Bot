@@ -1259,7 +1259,7 @@ def handle_docs_photo(message: Message):
     try:
         userID = message.from_user.id
 
-        if not getIsEditor(userID) or not (message.document.file_name.endswith(".xls") or message.document.file_name.endswith(".xlsx")):
+        if not getIsEditor(userID) or not message.document.file_name.endswith(".xls"):
             return
 
         bot.send_message(message.chat.id, f"Загрузка файла {message.document.file_name}")
@@ -1269,7 +1269,7 @@ def handle_docs_photo(message: Message):
 
         bot.send_message(message.chat.id, "Файл Загружен! Парсим...")
 
-        data = exel_file_parser.try_get_data(downloaded_file, message.document.file_name.endswith(".xlsx"), updatedData.pairs, updatedData.teachers)
+        data = exel_file_parser.try_get_data(downloaded_file, False, updatedData.pairs, updatedData.teachers)
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
