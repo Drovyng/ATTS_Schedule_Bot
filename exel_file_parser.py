@@ -115,9 +115,9 @@ def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]
     return result
 
 
-def try_get_data(file: bytes, pairs: list[str], teachers: list[str]) -> list[GroupData]:
+def try_get_data(file: bytes, isNewFormat: bool, pairs: list[str], teachers: list[str]) -> list[GroupData]:
 
-    workbook = xlrd.open_workbook_xls(file_contents=file)
+    workbook = xlrd.open_workbook(file_contents=file) if isNewFormat else xlrd.open_workbook_xls(file_contents=file)
     worksheet = workbook.sheet_by_index(0)
 
     startX, startY = get_start(worksheet)
