@@ -1300,6 +1300,23 @@ def handle_docs_photo(message: Message):
         bot.send_message(message.chat.id, err)
 
 
+def get_list_index(value: str, values: list[str]) -> int:
+    from fuzzywuzzy.fuzz import ratio
+    best = 0
+    bestI = 0
+    i = -1
+    for v in values:
+        i += 1
+        rt = ratio(value.lower(), v.lower())
+        if rt > best:
+            best = rt
+            bestI = i
+
+    if best > 95:
+        return bestI
+    return -1
+
+
 def button_docs_photo(message: Message, dataNames, dataWeeks):
 
     try:
@@ -1309,10 +1326,13 @@ def button_docs_photo(message: Message, dataNames, dataWeeks):
             return
     except:
         pass
-    if message.text.replace(">> ", "") in dataNames:
+
+    textIndex = get_list_index(message.text.replace(">> ", "").replace(" ",""), dataNames)
+
+    if textIndex != -1:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
-        selected = dataNames.index(message.text.replace(">> ", ""))
+        selected = textIndex
 
         for i in range(len(dataNames)):
             grpName, week = dataNames[i], dataWeeks[i]
