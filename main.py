@@ -473,7 +473,7 @@ def on_message(message: Message):
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
         endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
 
-        textPlus = f"\nДаты: {startDate} - {endDate}"
+        textPlus = f" ({startDate} - {endDate})"
 
         img = None
         if findIsTeacher(userID):
@@ -512,7 +512,7 @@ def on_message(message: Message):
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
         endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
 
-        textPlus = f"\nДаты: {startDate} - {endDate}"
+        textPlus = f" ({startDate} - {endDate})"
 
 
         img = None
@@ -955,6 +955,7 @@ def get_pair_day(message: Message):
         return
 
     curDay = datetime.datetime.now().isocalendar().weekday
+
     dayIndex = 0
     if text == "Сегодня":
         if curDay == 7:
@@ -1001,7 +1002,8 @@ def get_pair_day(message: Message):
             updatedData.teachers
         )
     img.seek(0)
-    bot.send_photo(message.chat.id, img, f"Вот пары на {text.lower()}", reply_markup=menu_keyboard(userID))
+    nowDate = datetime.datetime.now().isocalendar()
+    bot.send_photo(message.chat.id, img, f"Вот пары на {text.lower()} ({datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, dayIndex+1).strftime("%d.%m.%Y")})", reply_markup=menu_keyboard(userID))
 
 
 def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, name: Union[str | None]):
