@@ -355,12 +355,12 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
     if isInGroup:
-        groupBtnName = KeyboardButtons[20] if findIsTeacher(userID) else KeyboardButtons[0]
         markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]),
-                   KeyboardButton(groupBtnName))
+                   KeyboardButton(KeyboardButtons[27]))
 
     if isInGroup:
-        markup.row(KeyboardButton(KeyboardButtons[25]), KeyboardButton(KeyboardButtons[26]))
+        groupBtnName = KeyboardButtons[20] if findIsTeacher(userID) else KeyboardButtons[0]
+        markup.row(KeyboardButton(groupBtnName), KeyboardButton(KeyboardButtons[25]), KeyboardButton(KeyboardButtons[26]))
         markup.row(KeyboardButton(KeyboardButtons[21]), KeyboardButton(KeyboardButtons[17]))
     else:
         markup.row(KeyboardButton(KeyboardButtons[19]))
