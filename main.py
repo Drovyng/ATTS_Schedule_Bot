@@ -36,8 +36,9 @@ KeyboardButtons: list[str] = [
     "Статистика",
     "Список",
 
-    "Список 📋",         # 25 index
-    "Обратная связь 📝"  # 26 index
+    "Список 📋",             # 25 index
+    "Обратная связь 📝",     # 26 index
+    "Расписание (След.) 📄"  # 27 index
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -466,7 +467,14 @@ def on_message(message: Message):
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
-        
+
+
+        nowDate = datetime.datetime.now().isocalendar()
+        startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
+        endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
+
+        textPlus = f"\nДаты: {startDate} - {endDate}"
+
         img = None
         if findIsTeacher(userID):
             curWeek: group_data.WeekDataTeacher = teachersPairs[0][findTeacherIndex(userID)]
@@ -482,7 +490,7 @@ def on_message(message: Message):
             if updatedData.groups.count(groupName) != 0:
                 groupID = updatedData.groups.index(groupName)
             if groupID == -1 or updatedData.groups_data_cur[groupID].count("[") < 10:
-                bot.send_message(message.chat.id, f"Расписание на эту неделю ещё не добавлено!",
+                bot.send_message(message.chat.id, f"Расписание на эту текущую ещё не добавлено!{textPlus}",
                                  reply_markup=menu_keyboard(userID))
                 return
             curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
@@ -492,7 +500,47 @@ def on_message(message: Message):
                 updatedData.teachers
             )
         img.seek(0)
-        bot.send_photo(message.chat.id, img, "Вот пары на эту неделю", reply_markup=menu_keyboard(userID))
+        bot.send_photo(message.chat.id, img, f"Вот пары на текущую неделю{textPlus}", reply_markup=menu_keyboard(userID))
+
+    elif textIndex == 27:
+        studentIndex = findStudentIndex(userID)
+        if studentIndex == -1:
+            bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
+            return
+
+        nowDate = datetime.datetime.fromordinal(datetime.datetime.now().toordinal()+7).isocalendar()
+        startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
+        endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
+
+        textPlus = f"\nДаты: {startDate} - {endDate}"
+
+
+        img = None
+        if findIsTeacher(userID):
+            curWeek: group_data.WeekDataTeacher = teachersPairs[1][findTeacherIndex(userID)]
+
+            img = imaginazer.toImageTeacher(
+                curWeek,
+                updatedData.pairs,
+                updatedData.groups
+            )
+        else:
+            groupID = -1
+            groupName = json.loads(updatedData.students[studentIndex])[1]
+            if updatedData.groups.count(groupName) != 0:
+                groupID = updatedData.groups.index(groupName)
+            if groupID == -1 or updatedData.groups_data_next[groupID].count("[") < 10:
+                bot.send_message(message.chat.id, f"Расписание на эту следующую ещё не добавлено!{textPlus}",
+                                 reply_markup=menu_keyboard(userID))
+                return
+            curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
+            img = imaginazer.toImage(
+                curWeek,
+                updatedData.pairs,
+                updatedData.teachers
+            )
+        img.seek(0)
+        bot.send_photo(message.chat.id, img, f"Вот пары на следующую неделю{textPlus}", reply_markup=menu_keyboard(userID))
 
     elif textIndex == 6:
         studentIndex = findStudentIndex(userID)
