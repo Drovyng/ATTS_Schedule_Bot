@@ -473,7 +473,7 @@ def on_message(message: Message):
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
         endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
 
-        textPlus = f" ({startDate} - {endDate})"
+        textPlus = f"\n{startDate} - {endDate}"
 
         img = None
         if findIsTeacher(userID):
@@ -512,7 +512,7 @@ def on_message(message: Message):
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
         endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
 
-        textPlus = f" ({startDate} - {endDate})"
+        textPlus = f"\n{startDate} - {endDate}"
 
 
         img = None
