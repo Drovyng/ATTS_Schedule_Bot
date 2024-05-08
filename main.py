@@ -12,8 +12,8 @@ KeyboardButtons: list[str] = [
     "Меню 📋",
 
     "Выйти ❌",
-    "Расписание 📄",
-    "Расписание (День) 📄",
+    "Расписание 📄",         # 5 index
+    "Расписание (День) 📄",  # 6 index
 
     "Добавить Группу",
     "Удалить Группу",
@@ -32,13 +32,13 @@ KeyboardButtons: list[str] = [
     "Выбрать Роль ⚡️",
     "Выбрать ФИО 🔆",
     "Сменить Роль ⚡️",
-    "Редактор 🧷",
+    "Редактор 🧷",               # 22 index
     "Статистика",
     "Список",
 
-    "Список 📋",             # 25 index
-    "Обратная связь 📝",     # 26 index
-    "Расписание (След.) 📄"  # 27 index
+    "Список 📋",                 # 25 index
+    "Обратная связь 📝",         # 26 index
+    "Расписание (След.) 📄"      # 27 index
 ]
 NotifyButtons: list[str] = [
     "На след. день",
@@ -347,6 +347,12 @@ def getUserNotifyIndex(userID: int) -> int:
         i += 1
     return -1
 
+def getReturnIfTime(message: Message) -> bool:
+    nowDate = datetime.datetime.now()
+    if nowDate.hour == 0 or (nowDate.hour == 23 and nowDate.minute >= 30):
+        bot.send_message(message.chat.id, "В это время данная кнопка недоступна!")
+        return True
+    return False
 
 def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
     global updatedData
@@ -367,8 +373,8 @@ def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
         markup.row(KeyboardButton(KeyboardButtons[26]))
 
     btns = []
-    if getIsEditor(userID):
-        btns.append(KeyboardButton(KeyboardButtons[22]))
+    #if getIsEditor(userID):
+    #    btns.append(KeyboardButton(KeyboardButtons[22]))
     if isDev:
         btns.append(KeyboardButton(KeyboardButtons[1]))
 
@@ -468,6 +474,8 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
 
+        if getReturnIfTime(message):
+            return
 
         nowDate = datetime.datetime.now().isocalendar()
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
@@ -508,6 +516,9 @@ def on_message(message: Message):
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
 
+        if getReturnIfTime(message):
+            return
+
         nowDate = datetime.datetime.fromordinal(datetime.datetime.now().toordinal()+7).isocalendar()
         startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
         endDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 7).strftime("%d.%m.%Y")
@@ -545,13 +556,17 @@ def on_message(message: Message):
     elif textIndex == 6:
         studentIndex = findStudentIndex(userID)
 
-        markup = ReplyKeyboardMarkup(resize_keyboard=True)
-
-        markup.add(*days)
-        studentIndex = findStudentIndex(userID)
         if studentIndex == -1:
             bot.send_message(message.chat.id, f"Вы не подключены к группе!", reply_markup=menu_keyboard(userID))
             return
+
+        if getReturnIfTime(message):
+            return
+
+
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+        markup.add(*days)
 
         bot.send_message(message.chat.id, f"На какой день вы хотите узнать расписание?", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, get_pair_day)
@@ -1508,7 +1523,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData):
             updatedData.saveAll()
             updatedData.saveTimer = 60         # 1 minute
             e += 1
-            if e >= 25:
+            if e >= 40:
                 saver.running = False
                 bot.stop_bot()
                 raise Exception("BotRestartCommand")
