@@ -1365,7 +1365,7 @@ def handle_docs_photo(message: Message):
         bot.send_message(message.chat.id, err)
 
 
-def get_list_index(value: str, values: list[str]) -> int:
+def get_list_index(value: str, values: list[str]) -> int:   # Not Used Anymore.
     from fuzzywuzzy.fuzz import ratio
     best = 0
     bestI = 0
@@ -1382,6 +1382,20 @@ def get_list_index(value: str, values: list[str]) -> int:
     return -1
 
 
+group_characters = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'
+]
+
+
+def only_group(value:str) -> str:       #More Efficiency. I Hope
+    global group_characters
+    to_return = ""
+    for char in value:
+        if char in group_characters:
+            to_return += char
+    return to_return
+
+
 def button_docs_photo(message: Message, dataNames, dataWeeks):
 
     try:
@@ -1392,7 +1406,7 @@ def button_docs_photo(message: Message, dataNames, dataWeeks):
     except:
         pass
 
-    textIndex = get_list_index(message.text.replace(">> ", "").replace(" ",""), dataNames)
+    textIndex = dataNames.index(only_group(message.text))
 
     if textIndex != -1:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
