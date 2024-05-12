@@ -1365,7 +1365,7 @@ def handle_docs_photo(message: Message):
         bot.send_message(message.chat.id, err)
 
 
-def get_list_index(value: str, values: list[str]) -> int:   # Not Used Anymore.
+def get_list_index(value: str, values: list[str]) -> int:
     from fuzzywuzzy.fuzz import ratio
     best = 0
     bestI = 0
@@ -1377,21 +1377,22 @@ def get_list_index(value: str, values: list[str]) -> int:   # Not Used Anymore.
             best = rt
             bestI = i
 
-    if best > 95:
+    if best > 85:
         return bestI
     return -1
 
 
-group_characters = [
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'
-]
-
-
-def only_group(value:str) -> str:       #More Efficiency. I Hope
+def only_group(value:str) -> str:
     global group_characters
+    isgroup = False
     to_return = ""
     for char in value:
-        if char in group_characters:
+        if char == "№":
+            isgroup = True
+            continue
+        if char == " ":
+            continue
+        if isgroup:
             to_return += char
     return to_return
 
@@ -1406,7 +1407,7 @@ def button_docs_photo(message: Message, dataNames, dataWeeks):
     except:
         pass
 
-    textIndex = dataNames.index(only_group(message.text))
+    textIndex = get_list_index(only_group(message.text), dataNames)
 
     if textIndex != -1:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -1415,6 +1416,8 @@ def button_docs_photo(message: Message, dataNames, dataWeeks):
 
         for i in range(len(dataNames)):
             grpName, week = dataNames[i], dataWeeks[i]
+
+            grpName = "Группа № " + grpName
 
             if i == selected:
                 urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [json.dumps(week)], 1]
