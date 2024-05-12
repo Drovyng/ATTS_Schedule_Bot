@@ -1343,7 +1343,7 @@ def handle_docs_photo(message: Message):
 
         for grpData in data:
             grpName, week = grpData
-            dataNames.append(grpName)
+            dataNames.append(only_group(grpName))
             dataWeeks.append(week)
             markup.row(KeyboardButton(grpName))
 
