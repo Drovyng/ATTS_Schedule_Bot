@@ -40,6 +40,36 @@ KeyboardButtons: list[str] = [
     "Обратная связь 📝",         # 26 index
     "Расписание (След.) 📄"      # 27 index
 ]
+KeyboardButtonsCallbacks = [
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-"
+]
 NotifyButtons: list[str] = [
     "На след. день",
     "На след. неделю",
@@ -243,6 +273,7 @@ emptyTeacherDay: group_data.DayDataTeacher = [[-1, -1, -1] for _ in range(6)]
 
 teachersPairs: list[list[group_data.WeekDataTeacher]] = [[], []]
 
+
 def recalculateTeachersPairs(nextWeek:bool):
     global updatedData, teachersPairs, emptyTeacherDay
     nextWeekInt = 1 if nextWeek else 0
@@ -281,10 +312,9 @@ recalculateTeachersPairsAll()
 
 
 import telebot
-from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, Update, CallbackQuery
 
 bot = telebot.TeleBot(config.bot_token)
-
 
 
 def findStudent(userID) -> list:
@@ -297,6 +327,7 @@ def findStudent(userID) -> list:
         i += 1
     return None
 
+
 def findStudentIndex(userID) -> int:
     global updatedData
     i = 0
@@ -306,6 +337,7 @@ def findStudentIndex(userID) -> int:
         i += 1
     return -1
 
+
 def findTeacherIndex(userID) -> int:
     global updatedData
     student = findStudent(userID)
@@ -313,12 +345,14 @@ def findTeacherIndex(userID) -> int:
         return -1
     return updatedData.teachers.index(student[2])
 
+
 def findIsTeacher(userID) -> bool:
     global updatedData
     student = findStudent(userID)
     if student == None:
         return False
     return student[1] == "Teacher"
+
 
 def findStudentGroup(userID) -> int:
     global updatedData
@@ -347,6 +381,7 @@ def getUserNotifyIndex(userID: int) -> int:
         i += 1
     return -1
 
+
 def getReturnIfTime(message: Message) -> bool:
     nowDate = datetime.datetime.now()
     if nowDate.hour == 0 or (nowDate.hour == 23 and nowDate.minute >= 30):
@@ -354,33 +389,41 @@ def getReturnIfTime(message: Message) -> bool:
         return True
     return False
 
-def menu_keyboard(userID: int) -> ReplyKeyboardMarkup:
+
+@bot.callback_query_handler(func=lambda call: True)
+def buttononclick(query: CallbackQuery):
+    bot.answer_callback_query(query.id)
+    bot.send_message(query.message.chat.id, "Ку-ку")
+
+
+
+
+def menu_keyboard(userID: int) -> InlineKeyboardMarkup:
     global updatedData
     isInGroup = findStudentIndex(userID) != -1
     isDev = getIsDev(userID)
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup = InlineKeyboardMarkup()
 
     if isInGroup:
-        markup.row(KeyboardButton(KeyboardButtons[5]), KeyboardButton(KeyboardButtons[6]),
-                   KeyboardButton(KeyboardButtons[27]))
+        markup.row(InlineKeyboardButton(KeyboardButtons[5], callback_data="-"), InlineKeyboardButton(KeyboardButtons[6], callback_data="-"),
+                   InlineKeyboardButton(KeyboardButtons[27], callback_data="-"))
 
     if isInGroup:
         groupBtnName = KeyboardButtons[20] if findIsTeacher(userID) else KeyboardButtons[0]
-        markup.row(KeyboardButton(groupBtnName), KeyboardButton(KeyboardButtons[25]), KeyboardButton(KeyboardButtons[26]))
-        markup.row(KeyboardButton(KeyboardButtons[21]), KeyboardButton(KeyboardButtons[17]))
+        markup.row(InlineKeyboardButton(groupBtnName, callback_data="-"), InlineKeyboardButton(KeyboardButtons[25], callback_data="-"), InlineKeyboardButton(KeyboardButtons[26], callback_data="-"))
+        markup.row(InlineKeyboardButton(KeyboardButtons[21], callback_data="-"), InlineKeyboardButton(KeyboardButtons[17], callback_data="-"))
     else:
-        markup.row(KeyboardButton(KeyboardButtons[19]))
-        markup.row(KeyboardButton(KeyboardButtons[26]))
+        markup.row(InlineKeyboardButton(KeyboardButtons[19], callback_data="-"))
+        markup.row(InlineKeyboardButton(KeyboardButtons[26], callback_data="-"))
 
-    btns = []
     #if getIsEditor(userID):
-    #    btns.append(KeyboardButton(KeyboardButtons[22]))
+    #    btns.append(InlineKeyboardButton(KeyboardButtons[22], callback_data="-"))
     if isDev:
-        btns.append(KeyboardButton(KeyboardButtons[1]))
+        markup.row(InlineKeyboardButton(KeyboardButtons[1], callback_data="-"))
 
-    markup.row(*btns)
 
     return markup
+
 
 def btnsMarkup(btns: list[str], maxLen:int = 5) -> ReplyKeyboardMarkup:
     lengrp = len(btns)
@@ -413,7 +456,7 @@ def start(message: Message):
 
     userID = message.from_user.id
     isDev = getIsDev(userID)
-    
+
     text1 = ""
     text2 = ""
 
@@ -732,7 +775,7 @@ def on_message(message: Message):
 
         bot.send_message(message.chat.id, "Выберите пункт:", reply_markup=markup)
         bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 0, -1)
-        
+
     elif textIndex == 19 or textIndex == 21:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.row(*WorkModeButtons)
@@ -920,7 +963,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             x1, x2, x3, x4 = notifyData
             notifyData = x1, x2, x3, True
             set_notify_data(notifyData)
-            
+
             bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}]!", reply_markup=menu_keyboard(userID))
         elif text == NotifyButtonsSelect[2]:
             x1, x2, x3, x4 = notifyData
@@ -929,7 +972,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             elif curSelected == 3: x4 = False
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
-            
+
             bot.send_message(message.chat.id, f"Вы успешно отключили уведомление [{punkt}]!",
                              reply_markup=menu_keyboard(userID))
 
@@ -942,7 +985,7 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             elif curSelected == 1: x3 = timeIndex
             notifyData = x1, x2, x3, x4
             set_notify_data(notifyData)
-            
+
             bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
 
 
@@ -1045,7 +1088,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                     bot.send_message(message.chat.id, f"Пытаюсь обновить файл [{name}]...",
                                      reply_markup=menu_keyboard(userID))
                     raise Exception(f"UpdateFile|{name}")
-                
+
                 bot.send_message(message.chat.id, f"Успешно добавлен{sendText} [{name}]!",
                                  reply_markup=menu_keyboard(userID))
 
@@ -1075,7 +1118,7 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
                         return
                     updatedData.teachers.remove(name)
                     sendText = " преподаватель"
-                
+
                 bot.send_message(message.chat.id, f"Успешно удален{sendText} [{name}]!",
                                  reply_markup=menu_keyboard(userID))
 
@@ -1130,7 +1173,7 @@ def select_teacher(message: Message, course:int):
     if studentIndex != -1:
         if json.loads(updatedData.students[studentIndex])[1] == "Teacher":
             whoAmI = json.loads(updatedData.students[studentIndex])[2]
-        
+
     if text == SelectGroupButtons[3]:
         start(message)
         return
@@ -1167,7 +1210,7 @@ def select_teacher(message: Message, course:int):
             updatedData.students.pop(studentIndex)
             bot.send_message(message.chat.id, f"Вы больше не [{whoAmI}]!",
                              reply_markup=menu_keyboard(userID))
-            
+
         return
 
     if text in updatedData.teachers:
@@ -1175,7 +1218,7 @@ def select_teacher(message: Message, course:int):
             if studentIndex != -1:
                 updatedData.students.pop(studentIndex)
             updatedData.students.append(json.dumps([userID, "Teacher", text], ensure_ascii=False))
-            
+
             bot.send_message(message.chat.id, f"Теперь вы [{text}]!", reply_markup=menu_keyboard(userID))
         else:
             bot.send_message(message.chat.id, f"Вы уже [{text}]!",
@@ -1194,7 +1237,7 @@ def select_group(message: Message, course:int):
 
     if studentIndex != -1:
         group = json.loads(updatedData.students[studentIndex])[1]
-        
+
     if text == SelectGroupButtons[3]:
         start(message)
         return
@@ -1231,7 +1274,7 @@ def select_group(message: Message, course:int):
             updatedData.students.pop(studentIndex)
             bot.send_message(message.chat.id, f"Вы больше не подключены к группе [{group}]!",
                              reply_markup=menu_keyboard(userID))
-            
+
         return
 
     if text in updatedData.groups:
@@ -1239,7 +1282,7 @@ def select_group(message: Message, course:int):
             if studentIndex != -1:
                 updatedData.students.pop(studentIndex)
             updatedData.students.append(json.dumps([userID, text], ensure_ascii=False))
-            
+
             bot.send_message(message.chat.id, f"Вы подключены к группе [{text}]!", reply_markup=menu_keyboard(userID))
         else:
             bot.send_message(message.chat.id, f"Вы уже подключены к группе [{text}]!",
@@ -1281,10 +1324,10 @@ def handle_webapp_msg(message, dataNames, dataWeeks):
         for notify in updatedData.notifies:
             parsed = json.loads(notify)
             x1, x2, x3, x4 = parsed
-            
+
             studentGroup = findStudentGroup(x1)
             isTeacher = findIsTeacher(x1)
-            
+
             if (studentGroup == groupIndex or isTeacher) and x4 == True:
                 img = None
                 if isTeacher:
@@ -1534,7 +1577,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData):
     time.sleep(5)
 
     e = -1
-    
+
     while saver.running:
         if updatedData.saveTimer <= 0:
             updatedData.saveAll()
@@ -1550,7 +1593,7 @@ def thread_check_time(saver: RunSaver, updatedData: UpdatedData):
 
 
 def run_bot(saver: RunSaver):
-    
+
     threading.Thread(target=thread_check_time, args=(saver, updatedData)).start()
 
     bot.polling(non_stop=True)
