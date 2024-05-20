@@ -247,7 +247,7 @@ def recalculateTeachersPairs(nextWeek:bool):
     global updatedData, teachersPairs, emptyTeacherDay
     nextWeekInt = 1 if nextWeek else 0
     teachersPairs[nextWeekInt] = [[emptyTeacherDay[:] for _ in range(6)] for _ in range(updatedData.teachersCount)]
-
+    return
     toRead = updatedData.groups_data_next if nextWeek else updatedData.groups_data_cur
 
     for i in range(updatedData.groupsCount):                # Group
