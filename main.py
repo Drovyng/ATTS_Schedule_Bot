@@ -69,6 +69,15 @@ AllButtonsDict: list[tuple[str, str]] = [                  # TODO
     ("sh_day_cur", "Сегодня"),      # 20
     ("sh_day_next", "Завтра"),      # 21
     ("sh_day_back", "Назад ◀️"),    # 22
+
+    ("mm_admin", "Админ 🔧"),       # 23
+
+    ("fb_question", "Вопрос ❓"),    # 24
+    ("fb_error", "Ошибка 🚫"),      # 25
+    ("fb_offer", "Предложение 🤔"), # 26
+    ("fb_other", "Другое 🌐"),      # 27
+
+    ("feedback", "Назад ◀️"),       # 28
 ]
 AllButtons: list[str] = []
 AllButtonsIds: list[str] = []
@@ -454,18 +463,23 @@ def on_button(query: CallbackQuery):
         markup.row(kb(13))
 
     elif id == 6 or id == 22:
-        editText = "Выберите тип расписания:"
-        markup.row(kb(3))
-        markup.row(kb(7), kb(8))
-        markup.row(kb(9))
+        if getReturnIfTime():
+            editText = "Данная функция в это время недоступна!"
+            markup = None
+        else:
+            editText = "Выберите тип расписания:"
+            markup.row(kb(3))
+            markup.row(kb(7), kb(8))
+            markup.row(kb(9))
 
     elif id == 7:
         studentIndex = findStudentIndex(userID)
         if studentIndex == -1:
             editText = "Вы не подключены к группе!"
-
+            markup = None
         elif getReturnIfTime():
             editText = "Данная функция в это время недоступна!"
+            markup = None
         else:
             nowDate = datetime.datetime.now().isocalendar()
             startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
@@ -489,8 +503,10 @@ def on_button(query: CallbackQuery):
                     groupID = updatedData.groups.index(groupName)
                 if groupID == -1:
                     editText = "У вас отсутствует роль!"
+                    markup = None
                 elif updatedData.groups_data_cur[groupID].count("[") < 10:
                     editText = f"Расписание на эту текущую ещё не добавлено!{textPlus}"
+                    markup = None
                 else:
                     curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
                     img = imaginazer.toImage(
@@ -510,8 +526,10 @@ def on_button(query: CallbackQuery):
         studentIndex = findStudentIndex(userID)
         if studentIndex == -1:
             editText = "Вы не подключены к группе!"
+            markup = None
         elif getReturnIfTime():
             editText = "Данная функция в это время недоступна!"
+            markup = None
         else:
             nowDate = datetime.datetime.fromordinal(datetime.datetime.now().toordinal() + 7).isocalendar()
             startDate = datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, 1).strftime("%d.%m.%Y")
@@ -535,8 +553,10 @@ def on_button(query: CallbackQuery):
                     groupID = updatedData.groups.index(groupName)
                 if groupID == -1:
                     editText = "У вас отсутствует роль!"
+                    markup = None
                 elif updatedData.groups_data_next[groupID].count("[") < 10:
                     editText = f"Расписание на эту следующую ещё не добавлено!{textPlus}"
+                    markup = None
                 else:
                     curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_next[groupID])
                     img = imaginazer.toImage(
@@ -553,72 +573,80 @@ def on_button(query: CallbackQuery):
                 markup = None
 
     elif id == 9:
-        editText = "Выберите день:"
-        markup.row(kb(22), kb(20), kb(21))
-        markup.row(kb(14), kb(15), kb(16))
-        markup.row(kb(17), kb(18), kb(19))
-
-    elif "sh_day_" in data:
-        dayIndex = ["0", "1", "2", "3", "4", "5", "cur", "next"].index(data.replace("sh_day_", ""))
-
-        curDayI = datetime.datetime.now().isocalendar().weekday
-
-        noSend = False
-
-        if dayIndex == 6:
-            if curDayI == 7:
-                noSend = True
-            else:
-                dayIndex = curDayI - 1
-        elif dayIndex == 7:
-            if curDayI >= 6:
-                noSend = True
-            else:
-                dayIndex = curDayI
-
-        if not noSend:
-            dayName = AllButtons[dayIndex + 14]
-
-            img = None
-            if findIsTeacher(userID):
-                img = imaginazer.toImageDayTeacher(
-                    teachersPairs[0][findTeacherIndex(userID)][dayIndex],
-                    dayName,
-                    updatedData.pairs,
-                    updatedData.groups
-                )
-            else:
-                groupID = -1
-                groupName = json.loads(updatedData.students[findStudentIndex(userID)])[1]
-                if updatedData.groups.count(groupName) != 0:
-                    groupID = updatedData.groups.index(groupName)
-                if groupID == -1:
-                    editText = "У вас отсутствует роль!"
-                elif updatedData.groups_data_cur[groupID].count("[") < 10:
-                    editText = "Расписание на эту неделю ещё не добавлено!"
-                else:
-                    curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                    curDay: group_data.DayData = curWeek[dayIndex]
-
-                    img = imaginazer.toImageDay(
-                        curDay,
-                        dayName,
-                        updatedData.pairs,
-                        updatedData.teachers
-                    )
-            if not img is None:
-                img.seek(0)
-                nowDate = datetime.datetime.now().isocalendar()
-                bot.send_photo(message.chat.id, img, f"Вот пары на {dayName.lower()} ({datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, dayIndex + 1).strftime("%d.%m.%Y")})")
-                resend = True
-            else:
-                editText = "Произошла ошибка!"
-                markup = None
+        if getReturnIfTime():
+            editText = "Данная функция в это время недоступна!"
+            markup = None
         else:
-            editText = "Недоступный день! Выберите другой день:"
+            editText = "Выберите день:"
             markup.row(kb(22), kb(20), kb(21))
             markup.row(kb(14), kb(15), kb(16))
             markup.row(kb(17), kb(18), kb(19))
+
+    elif "sh_day_" in data:
+        if getReturnIfTime():
+            editText = "Данная функция в это время недоступна!"
+            markup = None
+        else:
+            dayIndex = ["0", "1", "2", "3", "4", "5", "cur", "next"].index(data.replace("sh_day_", ""))
+
+            curDayI = datetime.datetime.now().isocalendar().weekday
+
+            noSend = False
+
+            if dayIndex == 6:
+                if curDayI == 7:
+                    noSend = True
+                else:
+                    dayIndex = curDayI - 1
+            elif dayIndex == 7:
+                if curDayI >= 6:
+                    noSend = True
+                else:
+                    dayIndex = curDayI
+
+            if not noSend:
+                dayName = AllButtons[dayIndex + 14]
+
+                img = None
+                if findIsTeacher(userID):
+                    img = imaginazer.toImageDayTeacher(
+                        teachersPairs[0][findTeacherIndex(userID)][dayIndex],
+                        dayName,
+                        updatedData.pairs,
+                        updatedData.groups
+                    )
+                else:
+                    groupID = -1
+                    groupName = json.loads(updatedData.students[findStudentIndex(userID)])[1]
+                    if updatedData.groups.count(groupName) != 0:
+                        groupID = updatedData.groups.index(groupName)
+                    if groupID == -1:
+                        editText = "У вас отсутствует роль!"
+                    elif updatedData.groups_data_cur[groupID].count("[") < 10:
+                        editText = "Расписание на эту неделю ещё не добавлено!"
+                    else:
+                        curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
+                        curDay: group_data.DayData = curWeek[dayIndex]
+
+                        img = imaginazer.toImageDay(
+                            curDay,
+                            dayName,
+                            updatedData.pairs,
+                            updatedData.teachers
+                        )
+                if not img is None:
+                    img.seek(0)
+                    nowDate = datetime.datetime.now().isocalendar()
+                    bot.send_photo(message.chat.id, img, f"Вот пары на {dayName.lower()} ({datetime.datetime.fromisocalendar(nowDate.year, nowDate.week, dayIndex + 1).strftime("%d.%m.%Y")})")
+                    resend = True
+                else:
+                    editText = "Произошла ошибка!"
+                    markup = None
+            else:
+                editText = "Недоступный день! Выберите другой день:"
+                markup.row(kb(22), kb(20), kb(21))
+                markup.row(kb(14), kb(15), kb(16))
+                markup.row(kb(17), kb(18), kb(19))
 
     elif id == 4 or id == 12:
         markup = btnsMarkup("sg_", updatedData.groups, 4)
@@ -682,17 +710,27 @@ def on_button(query: CallbackQuery):
 
             if i == index:
                 urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [datas[i]], 1]
-                print(urlData)
+
                 url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
                 url += json.dumps(urlData, ensure_ascii=False).replace(
                     "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
                 url += "customdataend"
-                print(url)
+
                 markup.row(InlineKeyboardButton(">> " + name, web_app=WebAppInfo(url)))
             else:
                 markup.row(InlineKeyboardButton(name, callback_data=f"lg_{i}"))
 
         editText = f"Выберите группу, затем нажмите ещё раз для загрузки...\n\n<tg-spoiler>{dataStr}</tg-spoiler>"
+
+    elif id == 11:
+        editText = "Выберите тип обращения:"
+        markup.row(kb(3))
+        markup.row(kb(24), kb(25))
+        markup.row(kb(26), kb(27))
+
+    elif 24 <= id <= 27:
+        editText = f"Выбран тип «{AllButtons[id]}»\nНажмите «<b>Ответить</b>» на это сообщение для отправки\n<tg-spoiler>~{AllButtonsIds[id]}~</tg-spoiler>"
+        markup.row(kb(28))
 
     try:
         bot.answer_callback_query(query.id)
@@ -701,7 +739,7 @@ def on_button(query: CallbackQuery):
 
     if resend:
         bot.delete_message(message.chat.id, message.id)
-        bot.send_message(message.chat.id, "Меню:", reply_markup=menu_keyboard(message.chat.id))
+        bot.send_message(message.chat.id, "Открыто меню:", reply_markup=menu_keyboard(message.chat.id))
         return
     if editText != "":
         if markup is None:
@@ -724,21 +762,9 @@ def menu_keyboard(userID: int) -> InlineKeyboardMarkup:
         markup.row(kb(10))
 
     markup.row(kb(11))
-    # if isInGroup:
-    #     markup.row(KB(KeyboardButtonsOld[5], callback_data="-"), KB(KeyboardButtonsOld[6], callback_data="-"),
-    #                KB(KeyboardButtonsOld[27], callback_data="-"))
-    #
-    # if isInGroup:
-    #     groupBtnName = KeyboardButtonsOld[20] if findIsTeacher(userID) else KeyboardButtonsOld[0]
-    #     markup.row(KB(groupBtnName, callback_data="-"), KB(KeyboardButtonsOld[25], callback_data="-"), KB(KeyboardButtonsOld[26], callback_data="-"))
-    #     markup.row(KB(KeyboardButtonsOld[21], callback_data="-"), KB(KeyboardButtonsOld[17], callback_data="-"))
-    # else:
-    #     markup.row(KB(KeyboardButtonsOld[19], callback_data="-"))
-    #     markup.row(KB(KeyboardButtonsOld[26], callback_data="-"))
-    #
-    # if isDev:
-    #     markup.row(KB(KeyboardButtonsOld[1], callback_data="-"))
 
+    if isDev:
+        markup.row(kb(23))
 
     return markup
 
@@ -750,12 +776,14 @@ def btnsMarkup(prefix: str, btns: list[str], maxLen: int = 5, backIndex = 3) -> 
 
     markup = InlineKeyboardMarkup()
     markup.row(kb(backIndex))
+
     b = 0
-    for i in range(rows):
+    for i in range(rows+1):
         inRow = []
         for j in range(0, min(lengrp - inrow * i, inrow)):
             inRow.append(InlineKeyboardButton(btns[b], callback_data=prefix+btns[b]))
             b += 1
+
         markup.row(*inRow)
     return markup
 
@@ -769,23 +797,68 @@ def getBtnsPage(fromList:list[str], page:int, limit:int = 5) -> list[str]:
     return btns
 
 
-@bot.message_handler(commands=['start', 'menu'])        # TODO
+@bot.message_handler(commands=['start', 'menu'])        # TODO <-- Чтобы не потерять
 def start(message: Message):
-    global AllButtons, AllButtonsIds, startText
-
-    userID = message.from_user.id
+    global startText
 
     bot.send_message(
         message.chat.id,
         startText,
-        reply_markup=menu_keyboard(userID),
+        reply_markup=menu_keyboard(message.from_user.id),
         parse_mode="html"
     )
 
 @bot.message_handler(content_types=["text"])
 def on_message(message: Message):
+    try:
+        if not message.reply_to_message is None:
+            reply = message.reply_to_message
+            if reply.from_user.is_bot:
+                if "fb_" in reply.text:
+                    text = f"<b>Обращение типа [{AllButtons[AllButtonsIds.index(reply.text.split("~")[1])]}]\nИдентификатор: #{message.chat.id}#{message.message_id}#\nНажмите «<b>Ответить</b>» на это сообщение для ответа!</b>\n{message.text}"
+                    sended = False
+                    for i in config.developers:
+                        try:
+                            bot.send_message(i, text, parse_mode="html")
+                            sended = True
+                        except:
+                            pass
+                    for i in updatedData.admins:
+                        try:
+                            bot.send_message(i, text, parse_mode="html")
+                            sended = True
+                        except:
+                            pass
+                    if sended:
+                        bot.send_message(message.chat.id,
+                                         f"Ваше обращение было отправлено! Идентификатор обращения: [{message.chat.id}-{message.message_id}]")
+                    else:
+                        bot.send_message(message.chat.id,
+                                         f"Ошибка! Ваше обращение не было отправлено!")
+                    bot.send_message(
+                        message.chat.id,
+                        "Открыто меню:",
+                        reply_markup=menu_keyboard(message.from_user.id),
+                        parse_mode="html"
+                    )
+                elif reply.text.count("#") >= 3 and getIsDev(message.from_user.id):
+                    reply_data = reply.text.split("#")
+
+                    reply_chat = reply_data[1]
+
+                    text = f"<b>Ответ по обращению [{reply_chat}-{reply_data[2]}]:</b>\n{message.text}"
+
+                    bot.send_message(reply_chat, text, parse_mode="html")
+
+                    bot.send_message(message.chat.id, "Ответ успешно отправлен!")
+                    return
+            return
+    except:
+        pass
+
     if message.text in KeyboardButtonsOld:
         bot.send_message(message.chat.id, "Данные команды устарели, пожалуйста используйте /menu!", reply_markup=telebot.types.ReplyKeyboardRemove())
+        return
 
     if not getIsDev(message.chat.id):
         return
@@ -1191,21 +1264,24 @@ def feedback_select(message: Message):
 def feedback_print(message: Message, getType: int):
     text = message.text
     text = f"<b>Обращение типа [{FeedbackButtons[getType]}]\nИдентификатор: #{message.chat.id}#{message.message_id}#\nОтветьте на это сообщение для ответа!</b>\n{text}"
-    count = 0
+    sended = False
     for i in config.developers:
         try:
             bot.send_message(i, text, parse_mode="html")
-            count += 1
+            sended = True
         except:
             pass
     for i in updatedData.admins:
         try:
             bot.send_message(i, text, parse_mode="html")
-            count += 1
+            sended = True
         except:
             pass
-    bot.send_message(message.chat.id, f"Ваше обращение было отправлено {count} администраторам! Идентификатор обращения: [{message.chat.id}-{message.message_id}]")
-
+    if sended:
+        bot.send_message(message.chat.id, f"Ваше обращение было отправлено! Идентификатор обращения: [{message.chat.id}-{message.message_id}]")
+    else:
+        bot.send_message(message.chat.id,
+                         f"Ошибка! Ваше обращение не было отправлено!")
 
 
 def set_notify_data(notifyData):
@@ -1283,13 +1359,11 @@ def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int =
             bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
 
 
-
 def dev_command(message: Message):
     exec(message.text)
     img = imaginazer.getScreenshot()
     img.seek(0)
     bot.send_photo(message.chat.id, img, "Вот скрин консоли", reply_markup=menu_keyboard(message.from_user.id))
-
 
 
 def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, name: Union[str | None]):
@@ -1393,10 +1467,9 @@ def dev_action(message: Message, isAdd: bool, isWhat: int, isToConfirm: bool, na
 
 @bot.message_handler(content_types=["web_app_data"])
 def on_webapp_msg(message):
-    handle_webapp_msg(message, None, None)
 
-def handle_webapp_msg(message, dataNames, dataWeeks):
     global updatedData
+
     data = group_data.loadWeekWeb(message.web_app_data.data)
     groupIndex = data[0]
     if groupIndex == -1:
@@ -1452,9 +1525,6 @@ def handle_webapp_msg(message, dataNames, dataWeeks):
 
     bot.send_message(message.chat.id, f"Данные успешно применены!")
 
-    if not dataNames is None:
-        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks)
-
 
 
 import traceback
@@ -1508,81 +1578,6 @@ def handle_docs_photo(message: Message):
         err = traceback.format_exc(4, True)
         bot.send_message(message.chat.id, "Что-то Сломалось...")
         bot.send_message(message.chat.id, err)
-
-
-def get_list_index(value: str, values: list[str]) -> int:
-    from fuzzywuzzy.fuzz import ratio
-    best = 0
-    bestI = 0
-    i = -1
-    for v in values:
-        i += 1
-        rt = ratio(value.lower(), v.lower())
-        if rt > best:
-            best = rt
-            bestI = i
-
-    if best > 85:
-        return bestI
-    return -1
-
-
-def only_group(value:str) -> str:
-    global group_characters
-    isgroup = False
-    to_return = ""
-    for char in value:
-        if char == "№":
-            isgroup = True
-            continue
-        if char == " ":
-            continue
-        if isgroup:
-            to_return += char
-    return to_return
-
-
-def button_docs_photo(message: Message, dataNames, dataWeeks):
-
-    try:
-        if message.text is None:
-            if not message.web_app_data is None and not message.web_app_data.data is None:
-                handle_webapp_msg(message, dataNames, dataWeeks)
-            return
-    except:
-        pass
-
-    textIndex = get_list_index(only_group(message.text), dataNames)
-
-    if textIndex != -1:
-        markup = ReplyKeyboardMarkup(resize_keyboard=True)
-
-        selected = textIndex
-
-        for i in range(len(dataNames)):
-            grpName, week = dataNames[i], dataWeeks[i]
-
-            grpName = "Группа № " + grpName
-
-            if i == selected:
-                urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [json.dumps(week)], 1]
-
-                url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
-                url += json.dumps(urlData, ensure_ascii=False).replace(
-                    "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
-                url += "customdataend"
-                print(url)
-                markup.row(KeyboardButton(">> " + grpName, web_app=WebAppInfo(url)))
-            else:
-                markup.row(KeyboardButton(grpName))
-
-        markup.row(KeyboardButtonsOld[3])
-
-        bot.send_message(message.chat.id, "Выберите группу, затем нажмите ещё раз для загрузки...\n\n<tg-spoiler>!</tg-spoiler>", reply_markup=markup)
-        bot.register_next_step_handler_by_chat_id(message.chat.id, button_docs_photo, dataNames, dataWeeks)
-        return
-
-    start(message)
 
 
 import os
