@@ -78,6 +78,8 @@ AllButtonsDict: list[tuple[str, str]] = [                  # TODO
     ("fb_other", "Другое 🌐"),      # 27
 
     ("feedback", "Назад ◀️"),       # 28
+
+    ("an_shedule", "Изменить/Загрузить расписание ✏️")  # 29
 ]
 AllButtons: list[str] = []
 AllButtonsIds: list[str] = []
@@ -709,18 +711,22 @@ def on_button(query: CallbackQuery):
             dataStr += name + "^"
 
             if i == index:
-                urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, [datas[i]], 1]
+                urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups, datas[i], 1]
 
                 url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
                 url += json.dumps(urlData, ensure_ascii=False).replace(
                     "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
                 url += "customdataend"
 
-                markup.row(InlineKeyboardButton(">> " + name, web_app=WebAppInfo(url)))
+                markup2 = ReplyKeyboardMarkup(resize_keyboard=True)
+                markup2.row(KeyboardButton("Загрузить данные «" + name + "»", web_app=WebAppInfo(url)))
+                bot.send_message(message.chat.id, "Нажмите кнопку загрузки", reply_markup=markup2)
+
+                markup.row(InlineKeyboardButton(">> " + name, callback_data=f"lg_{i}"))
             else:
                 markup.row(InlineKeyboardButton(name, callback_data=f"lg_{i}"))
 
-        editText = f"Выберите группу, затем нажмите ещё раз для загрузки...\n\n<tg-spoiler>{dataStr}</tg-spoiler>"
+        editText = f"Выберите группу для загрузки...\n\n<tg-spoiler>{dataStr}</tg-spoiler>"
 
     elif id == 11:
         editText = "Выберите тип обращения:"
@@ -731,6 +737,37 @@ def on_button(query: CallbackQuery):
     elif 24 <= id <= 27:
         editText = f"Выбран тип «{AllButtons[id]}»\nНажмите «<b>Ответить</b>» на это сообщение для отправки\n<tg-spoiler>~{AllButtonsIds[id]}~</tg-spoiler>"
         markup.row(kb(28))
+
+    elif id == 23:
+        markup.row(kb(3))
+        markup.row(kb(29))
+        editText = "Открыто меню администрирования..."
+
+    elif id == 29:
+        markup = btnsMarkup("aes_", updatedData.groups, 4)
+        editText = "Выберите группу для загрузки:"
+
+    elif "aes_" in data:
+        grp = data.replace("aes_", "")
+        if grp in updatedData.groups:
+            grpIndex = updatedData.groups.index(grp)
+
+            urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups,
+                       updatedData.groups_data_cur[grpIndex], updatedData.groups_data_next[grpIndex]]
+
+            url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
+            url += json.dumps(urlData, ensure_ascii=False).replace(
+                "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
+            url += "customdataend"
+
+            markup2 = ReplyKeyboardMarkup(resize_keyboard=True)
+            markup2.row(KeyboardButton("Изменить/Загрузить расписание «" + updatedData.groups[grpIndex] + "»",
+                                       web_app=WebAppInfo(url)))
+
+            bot.send_message(message.chat.id, "Нажмите кнопку загрузки", reply_markup=markup2)
+        else:
+            editText = "Неизвестная группа!"
+            markup = btnsMarkup("aes_", updatedData.groups, 4)
 
     try:
         bot.answer_callback_query(query.id)
@@ -807,6 +844,7 @@ def start(message: Message):
         reply_markup=menu_keyboard(message.from_user.id),
         parse_mode="html"
     )
+
 
 @bot.message_handler(content_types=["text"])
 def on_message(message: Message):
@@ -1523,7 +1561,7 @@ def on_webapp_msg(message):
 
     updatedData.saveAll()
 
-    bot.send_message(message.chat.id, f"Данные успешно применены!")
+    bot.send_message(message.chat.id, f"Данные успешно применены!", reply_markup=telebot.types.ReplyKeyboardRemove())
 
 
 
