@@ -1,7 +1,8 @@
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
-from group_data import WeekData, DayData, WeekDataTeacher, DayDataTeacher
+
+from group_data import WeekData, DayData, WeekDataTeacher, DayDataTeacher, Settings, TimeData
 
 days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
 cabinets = [str(i) for i in range(1, 26)]
@@ -12,15 +13,39 @@ cabinets.append("к/с")
 cabinets.append("р/ц")
 cabinets.append("")
 
+defaultTimes_2_5: list[TimeData] = ["08000", "09400", "11200", "12500", "14200", "15500", "17200"]
+defaultTimes: list[list[TimeData]] = [
+    ["08000", "10100", "11500", "13200", "15200", "16500", "17000"],
+    defaultTimes_2_5,
+    defaultTimes_2_5,
+    defaultTimes_2_5,
+    defaultTimes_2_5,
+    ["08000", "09100", "10200", "11300", "12400", "13500", "14000"]
+]
+
+
 def getScreenshot() -> BytesIO:
     import pyautogui
     output = BytesIO()
     pyautogui.screenshot().save(output, format='PNG')
     return output
 
-def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO:
+
+def formatTimeInt(time:str, before:str, enabled:bool) -> str:
+    mode = time[-1]
+    time = f"{time[0:2]}:{time[2:4]}"
     
-    global days
+    if mode == "0" and not enabled:
+        return before
+    if mode == "1":
+        return " | Приходить к " + time
+    return before + " в " + time
+
+
+def toImage(week: WeekData, getPairs:list[str], getTeachers:list[str], timesEnabled: bool) -> BytesIO:
+    
+    global days, defaultTimes
+
     pairs = getPairs[:]
     pairs.append("")
     teachers = getTeachers[:]
@@ -48,6 +73,8 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
     imgDraw = ImageDraw.Draw(img, "RGB")
     font = ImageFont.truetype("times.ttf", int(20 * scale))
 
+    times = len(week) > 6
+
     for i in range(6):
         day = week[i]
         offY = sizey / 4 + sizeY * i
@@ -55,7 +82,14 @@ def toImage(week:WeekData, getPairs:list[str], getTeachers:list[str]) -> BytesIO
         topText = days[i]
         if day[0] == -1:
             day[0] = 0
-        topText += f" | Приходить к {day[0]+1}-й паре"
+
+        topTextAdd = f" | Приходить к {day[0]+1}-й паре"
+
+        if times or timesEnabled:
+            topText += formatTimeInt(week[i+6] if times and len(week[i+6]) == 5 else defaultTimes[i][day[0]], topTextAdd, timesEnabled)
+        else:
+            topText += topTextAdd
+
         j = -1
         for pair in [day[1], day[2], day[3]]:
             j += 1
@@ -162,7 +196,7 @@ def toImageTeacher(week:WeekDataTeacher, getPairs:list[str], getGroups:list[str]
     return output
 
 
-def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[str]) -> BytesIO:
+def toImageDay(week: WeekData, dayId:int, getPairs:list[str], getTeachers:list[str], timesEnabled: bool) -> BytesIO:
     global days
     pairs = getPairs[:]
     pairs.append("")
@@ -187,6 +221,9 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
     s532 = int(532 * scale)
     s10 = int(10 * scale)
 
+    day = week[dayId]
+    times = len(week) > 6
+
     img = Image.new("RGB", (sizeX + offX * 2, sizeY), (200, 200, 200))
     imgDraw = ImageDraw.Draw(img, "RGB")
     font = ImageFont.truetype("times.ttf", int(20 * scale))
@@ -195,7 +232,15 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
 
     if day[0] == -1:
         day[0] = 0
-    dayText += f" | Приходить к {day[0]+1}-й паре"
+    dayText = days[dayId]
+
+    dayTextAdd = f" | Приходить к {day[0] + 1}-й паре"
+
+    if times or timesEnabled:
+        dayText += formatTimeInt(week[dayId + 6] if times and len(week[dayId + 6]) == 5 else defaultTimes[dayId][day[0]], dayTextAdd, timesEnabled)
+    else:
+        dayText += dayTextAdd
+
     j = -1
     for pair in [day[1], day[2], day[3]]:
         j += 1
@@ -220,8 +265,6 @@ def toImageDay(day:DayData, dayText:str, getPairs:list[str], getTeachers:list[st
     output = BytesIO()
     img.save(output, format='PNG')
     return output
-
-
 
 
 def toImageDayTeacher(day:DayDataTeacher, dayText:str, getPairs:list[str], getGroups:list[str]) -> BytesIO:

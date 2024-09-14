@@ -79,7 +79,10 @@ AllButtonsDict: list[tuple[str, str]] = [                  # TODO
 
     ("feedback", "Назад ◀️"),       # 28
 
-    ("an_shedule", "Изменить/Загрузить расписание ✏️")  # 29
+    ("an_shedule", "Изменить/Загрузить расписание ✏️"),  # 29
+
+    ("sh_time_toggle_on", "Показывать время? (сейчас ВЫКЛ)"),    # 30
+    ("sh_time_toggle_off", "Показывать время? (сейчас ВКЛ)"),    # 31
 ]
 AllButtons: list[str] = []
 AllButtonsIds: list[str] = []
@@ -165,7 +168,7 @@ class UpdatedData():
 
         self.saveTimer = 150
 
-        self.notifies: list[str] = []
+        self.settings: list[str] = []
 
         self.onSaveAll = None
 
@@ -181,7 +184,7 @@ class UpdatedData():
         self.pairsCount = len(self.pairs)
         self.groupsCount = len(self.groups)
         self.studentsCount = len(self.students)
-        self.notifiesCount = len(self.notifies)
+        self.settingsCount = len(self.settings)
 
     def reloadAll(self):
         self.adminsCount = int(sheets.getRange("A2")[0][0])
@@ -209,9 +212,9 @@ class UpdatedData():
         if self.studentsCount > 0:
             self.students = sheets.getRange(f"E3:E{2 + self.studentsCount}")[0]
 
-        self.notifiesCount = int(sheets.getRange("F2")[0][0])
-        if self.notifiesCount > 0:
-            self.notifies = sheets.getRange(f"F3:F{2 + self.notifiesCount}")[0]
+        self.settingsCount = int(sheets.getRange("F2")[0][0])
+        if self.settingsCount > 0:
+            self.settings = sheets.getRange(f"F3:F{2 + self.settingsCount}")[0]
 
         self.check()
 
@@ -277,10 +280,20 @@ class UpdatedData():
         while len(sendStudents) < self.studentsCount: sendStudents.append("")
         sheets.setRange(f"E3:E{2 + max(self.studentsCount, len(sendStudents))}", [sendStudents])
 
-        sheets.setRange("F2", [[str(len(self.notifies))]])
-        sendNotifies = self.notifies[:]
-        while len(sendNotifies) < self.notifiesCount: sendNotifies.append("")
-        sheets.setRange(f"F3:F{2 + max(self.notifiesCount, len(sendNotifies))}", [sendNotifies])
+        haveUsers: list[int] = []
+        for sett in self.settings:
+            haveUsers.append(json.loads(sett)[0])
+        for user in self.students:
+            id = json.loads(user)[0]
+            if not id in haveUsers:
+                haveUsers.append(id)
+                self.settings.append(json.dumps((id, False, False, False, False)))
+
+        sheets.setRange("F2", [[str(len(self.settings))]])
+        sendSettings = self.settings[:]
+
+        while len(sendSettings) < self.settingsCount: sendSettings.append("")
+        sheets.setRange(f"F3:F{2 + max(self.settingsCount, len(sendSettings))}", [sendSettings])
 
         self.resize()
 
@@ -397,10 +410,10 @@ def getIsEditor(userID: int) -> bool:
     return getIsDev(userID) or userID in updatedData.editors
 
 
-def getUserNotifyIndex(userID: int) -> int:
+def getUserSettingsIndex(userID: int) -> int:
     global updatedData
     i = 0
-    for st in updatedData.notifies:
+    for st in updatedData.settings:
         if json.loads(st)[0] == userID:
             return i
         i += 1
@@ -412,6 +425,17 @@ def getReturnIfTime() -> bool:
     if nowDate.hour == 0 or (nowDate.hour == 23 and nowDate.minute >= 30):
         return True
     return False
+
+
+def getUserSettings(userID: int) -> group_data.Settings:
+    for i in range(updatedData.settingsCount):
+        parsed: group_data.Settings = json.loads(updatedData.settings[i])
+        if len(parsed) < 5:
+            parsed = (parsed[0], parsed[1], parsed[2], parsed[3], False)
+            updatedData.settings[i] = json.dumps(parsed)
+        if parsed[0] == userID:
+            return parsed
+    return (userID, False, False, False, False)
 
 
 @bot.callback_query_handler(func=lambda call: True)     # TODO
@@ -464,13 +488,29 @@ def on_button(query: CallbackQuery):
         markup.row(kb(12))
         markup.row(kb(13))
 
-    elif id == 6 or id == 22:
+    elif id == 30:
+        i = getUserSettingsIndex(userID)
+        x1, x2, x3, x4 = json.loads(updatedData.settings[i])[:4]
+        updatedData.settings[i] = json.dumps((x1, x2, x3, x4, True))
+        editText = "Отображения времени <b>включено</b>!\nВыберите тип расписания:"
+        id = 6
+    elif id == 31:
+        i = getUserSettingsIndex(userID)
+        x1, x2, x3, x4 = json.loads(updatedData.settings[i])[:4]
+        updatedData.settings[i] = json.dumps((x1, x2, x3, x4, False))
+        editText = "Отображения времени <b>выключено</b>!\nВыберите тип расписания:"
+        id = 6
+
+    if id == 6 or id == 22:
         if getReturnIfTime():
             editText = "Данная функция в это время недоступна!"
             markup = None
         else:
-            editText = "Выберите тип расписания:"
+            if len(editText) == 0:
+                editText = "Выберите тип расписания:"
             markup.row(kb(3))
+            sett = getUserSettings(userID)
+            markup.row(kb(31 if sett[4] else 30))
             markup.row(kb(7), kb(8))
             markup.row(kb(9))
 
@@ -514,7 +554,8 @@ def on_button(query: CallbackQuery):
                     img = imaginazer.toImage(
                         curWeek,
                         updatedData.pairs,
-                        updatedData.teachers
+                        updatedData.teachers,
+                        getUserSettings(userID)[4]
                     )
             if not img is None:
                 img.seek(0)
@@ -564,7 +605,8 @@ def on_button(query: CallbackQuery):
                     img = imaginazer.toImage(
                         curWeek,
                         updatedData.pairs,
-                        updatedData.teachers
+                        updatedData.teachers,
+                        getUserSettings(userID)[4]
                     )
             if not img is None:
                 img.seek(0)
@@ -628,13 +670,13 @@ def on_button(query: CallbackQuery):
                         editText = "Расписание на эту неделю ещё не добавлено!"
                     else:
                         curWeek: group_data.WeekData = group_data.loadWeek(updatedData.groups_data_cur[groupID])
-                        curDay: group_data.DayData = curWeek[dayIndex]
 
                         img = imaginazer.toImageDay(
-                            curDay,
-                            dayName,
+                            curWeek,
+                            dayIndex,
                             updatedData.pairs,
-                            updatedData.teachers
+                            updatedData.teachers,
+                            getUserSettings(userID)[4]
                         )
                 if not img is None:
                     img.seek(0)
@@ -768,6 +810,7 @@ def on_button(query: CallbackQuery):
         else:
             editText = "Неизвестная группа!"
             markup = btnsMarkup("aes_", updatedData.groups, 4)
+
 
     try:
         bot.answer_callback_query(query.id)
@@ -1124,7 +1167,7 @@ def on_message(message: Message):
 #
 #     elif textIndex == 23 and isDev:
 #         notifyCount = 0
-#         for notify in updatedData.notifies:
+#         for notify in updatedData.settings:
 #             if notify.lower().count("false") < 3:
 #                 notifyCount += 1
 #
@@ -1186,7 +1229,7 @@ def on_message(message: Message):
 #         notifyData = [userID, False, False, False]
 #
 #         if notifyIndex != -1:
-#             notifyData = json.loads(updatedData.notifies[notifyIndex])
+#             notifyData = json.loads(updatedData.settings[notifyIndex])
 #
 #         btns = []
 #
@@ -1322,81 +1365,6 @@ def feedback_print(message: Message, getType: int):
                          f"Ошибка! Ваше обращение не было отправлено!")
 
 
-def set_notify_data(notifyData):
-    global updatedData
-    userIndex = getUserNotifyIndex(notifyData[0])
-    jsoned = json.dumps(notifyData)
-    if userIndex == -1:
-        updatedData.notifies.append(jsoned)
-    else:
-        updatedData.notifies[userIndex] = jsoned
-
-
-def notify_select(message: Message, notifyData, layer:int = 0, curSelected:int = 0):
-    global updatedData, NotifyButtons, KeyboardButtonsOld, NotifyButtonsTimes, NotifyButtonsSelect
-
-    text = message.text
-    userID = message.from_user.id
-
-    if text == KeyboardButtonsOld[3]:
-        start(message)
-        return
-
-    if layer == 0:
-        punkt = text[:-2]
-        if punkt in NotifyButtons:
-            punktIndex = NotifyButtons.index(punkt)
-            punktToggled = notifyData[punktIndex+1]
-            btns = []
-            if punktToggled:
-                if punktIndex != 2:
-                    btns.append(NotifyButtonsSelect[0])
-                btns.append(NotifyButtonsSelect[2])
-            else:
-                btns.append(NotifyButtonsSelect[1])     # Включить
-            btns.append(NotifyButtonsSelect[3])         # Назад
-
-            bot.send_message(message.chat.id, f"Открыты настройки пункта [{punkt}]:", reply_markup=btnsMarkup(btns))
-            bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 1, punktIndex)
-
-    elif layer == 1:
-        punkt = NotifyButtons[curSelected]
-        punktToggled = notifyData[curSelected+1]
-        toggleOn = (not punktToggled and text == NotifyButtonsSelect[1])
-        if (punktToggled and text == NotifyButtonsSelect[0]) or (toggleOn and curSelected != 2):
-            btns = NotifyButtonsTimes[:]
-            bot.send_message(message.chat.id, f"Выберите время для отправки уведомления [{punkt}]:", reply_markup=btnsMarkup(btns))
-            bot.register_next_step_handler_by_chat_id(message.chat.id, notify_select, notifyData, 2, curSelected)
-        elif toggleOn and curSelected == 2:
-            x1, x2, x3, x4 = notifyData
-            notifyData = x1, x2, x3, True
-            set_notify_data(notifyData)
-
-            bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}]!", reply_markup=menu_keyboard(userID))
-        elif text == NotifyButtonsSelect[2]:
-            x1, x2, x3, x4 = notifyData
-            if curSelected == 0: x2 = False
-            elif curSelected == 1: x3 = False
-            elif curSelected == 3: x4 = False
-            notifyData = x1, x2, x3, x4
-            set_notify_data(notifyData)
-
-            bot.send_message(message.chat.id, f"Вы успешно отключили уведомление [{punkt}]!",
-                             reply_markup=menu_keyboard(userID))
-
-    elif layer == 2:
-        punkt = NotifyButtons[curSelected]
-        if text in NotifyButtonsTimes:
-            timeIndex = NotifyButtonsTimes.index(text)
-            x1, x2, x3, x4 = notifyData
-            if curSelected == 0: x2 = timeIndex
-            elif curSelected == 1: x3 = timeIndex
-            notifyData = x1, x2, x3, x4
-            set_notify_data(notifyData)
-
-            bot.send_message(message.chat.id, f"Вы успешно включили уведомление [{punkt}] на время [{NotifyButtonsTimes[timeIndex]}]!", reply_markup=menu_keyboard(userID))
-
-
 def dev_command(message: Message):
     exec(message.text)
     img = imaginazer.getScreenshot()
@@ -1510,17 +1478,29 @@ def on_webapp_msg(message):
 
     data = group_data.loadWeekWeb(message.web_app_data.data)
     groupIndex = data[0]
-    if groupIndex == -1:
-        bot.send_message(message.chat.id, "Ошибка: Не введена группа!")
-        return
     nextWeek = data[1] == 1
-
     weekData: group_data.WeekData = [
         data[2], data[3],
         data[4], data[5],
         data[6], data[7]
     ]
     weekDataJson = group_data.saveWeek(weekData)
+    if groupIndex == -1:
+        urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups,
+                   weekDataJson if not nextWeek else [], weekDataJson if nextWeek else []]
+
+        url = "https://drovyng.github.io/ATTS_Schedule_Bot_Website#customdata"
+        url += json.dumps(urlData, ensure_ascii=False).replace(
+            "[", "q").replace("\"", "w").replace("]", "e").replace(" ", "r").replace(",", "t").replace(".", "y")
+        url += "customdataend"
+
+        markup2 = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup2.row(KeyboardButton("Исправить",
+                                   web_app=WebAppInfo(url)))
+
+        bot.send_message(message.chat.id, "Ошибка: Не введена группа!", reply_markup=markup2)
+        return
+
 
     updatedData.check()
 
@@ -1531,7 +1511,7 @@ def on_webapp_msg(message):
     recalculateTeachersPairsAll()
 
     if not nextWeek:
-        for notify in updatedData.notifies:
+        for notify in updatedData.settings:
             parsed = json.loads(notify)
             x1, x2, x3, x4 = parsed
 
@@ -1554,7 +1534,8 @@ def on_webapp_msg(message):
                     img = imaginazer.toImage(
                         weekData,
                         updatedData.pairs,
-                        updatedData.teachers
+                        updatedData.teachers,
+                        getUserSettings(x1)[4]
                     )
                 img.seek(0)
                 bot.send_photo(x1, img, f"⚠️ Пары на эту неделю были обновлены! ⚠️")
@@ -1627,10 +1608,11 @@ if os.path.exists("lastHour"):
         lastTime = int(file.read())
 
 if lastTime != nowTime:
-    curDay = datetime.datetime.now().isocalendar().weekday
-    for notify in updatedData.notifies:
-        parsed = json.loads(notify)
-        x1, x2, x3, x4 = parsed
+    curDay: int = datetime.datetime.now().isocalendar().weekday
+    for notify in updatedData.settings:
+        parsed: group_data.Settings = json.loads(notify)
+
+        x1, x2, x3, x4 = parsed[:4]
 
         groupID = findStudentGroup(x1)
         if groupID == -1:
@@ -1658,10 +1640,11 @@ if lastTime != nowTime:
                         )
                     else:
                         img = imaginazer.toImageDay(
-                            curDay,
-                            days[dayIndex],
+                            curWeek,
+                            dayIndex,
                             updatedData.pairs,
-                            updatedData.teachers
+                            updatedData.teachers,
+                            getUserSettings(x1)[4]
                         )
                         addEndText = f"\nПриходить к {max(0, curDay[0])+1}-й паре!"
                     img.seek(0)
@@ -1692,7 +1675,8 @@ if lastTime != nowTime:
                     img = imaginazer.toImage(
                         curWeek,
                         updatedData.pairs,
-                        updatedData.teachers
+                        updatedData.teachers,
+                        getUserSettings(x1)[4]
                     )
                 img.seek(0)
                 bot.send_photo(x1, img, f"🔔 Вот пары на {dayNextText} неделю 🔔")
