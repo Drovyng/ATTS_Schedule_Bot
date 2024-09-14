@@ -1484,6 +1484,12 @@ def on_webapp_msg(message):
         data[4], data[5],
         data[6], data[7]
     ]
+    if len(data) > 8:
+        weekData = weekData + [
+            data[8], data[9],
+            data[10], data[11],
+            data[12], data[13]
+        ]
     weekDataJson = group_data.saveWeek(weekData)
     if groupIndex == -1:
         urlData = [updatedData.pairs, updatedData.teachers, updatedData.groups,

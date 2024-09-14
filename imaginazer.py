@@ -34,7 +34,7 @@ def getScreenshot() -> BytesIO:
 def formatTimeInt(time:str, before:str, enabled:bool) -> str:
     mode = time[-1]
     time = f"{time[0:2]}:{time[2:4]}"
-    
+
     if mode == "0" and not enabled:
         return before
     if mode == "1":
