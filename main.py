@@ -1519,7 +1519,7 @@ def on_webapp_msg(message):
     if not nextWeek:
         for notify in updatedData.settings:
             parsed = json.loads(notify)
-            x1, x2, x3, x4 = parsed
+            x1, x2, x3 = parsed[:4]
 
             studentGroup = findStudentGroup(x1)
             isTeacher = findIsTeacher(x1)
