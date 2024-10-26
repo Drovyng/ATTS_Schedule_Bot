@@ -58,7 +58,7 @@ def get_pair(worksheet: Sheet, x: int, y: int) -> PairDataStr:
     return to_return
 
 
-def get_list_index(value: str, values: list[str]) -> int:
+def get_list_index(value: str, values: list[str], tupo:str) -> int:
     if len(value) < 3:
         return -1
     if value.count("\n") > 0 or value.count("   ") > 0:
@@ -76,7 +76,7 @@ def get_list_index(value: str, values: list[str]) -> int:
 
     if best > 60:
         return bestI
-    raise ParseDataError(f"Не найдено: {value}")
+    raise ParseDataError(f"Не найдено: {value} [{tupo}]")
 
 
 def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]) -> PairData:
@@ -88,8 +88,8 @@ def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]
     if p.replace(".", "").replace(",", "").isdigit():
         result[0] = -1
     else:
-        result[0] = get_list_index(p, pairs)
-    result[1] = get_list_index(t, teachers)
+        result[0] = get_list_index(p, pairs, "Пара")
+    result[1] = get_list_index(t, teachers, "Преподаватель")
 
     if c == "":
         result[2] = -1
