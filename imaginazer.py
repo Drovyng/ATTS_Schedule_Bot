@@ -37,6 +37,8 @@ def formatTimeInt(time:str, before:str, enabled:bool) -> str:
 
     if mode == "0" and not enabled:
         return before
+    if mode == "2":
+        return before
     if mode == "1":
         return " | Приходить к " + time
     return before + " в " + time
