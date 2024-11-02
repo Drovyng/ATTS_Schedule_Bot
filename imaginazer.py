@@ -31,14 +31,17 @@ def getScreenshot() -> BytesIO:
     return output
 
 
-def formatTimeInt(time:str, before:str, enabled:bool) -> str:
+def formatTimeInt(time:str, before:str, enabled:bool, defalt:str) -> str:
     mode = time[-1]
     time = f"{time[0:2]}:{time[2:4]}"
 
     if mode == "0" and not enabled:
         return before
     if mode == "2":
-        return before
+        if enabled:
+            return before + " в " + f"{defalt[0:2]}:{defalt[2:4]}"
+        else:
+            return before
     if mode == "1":
         return " | Приходить к " + time
     return before + " в " + time
@@ -88,7 +91,7 @@ def toImage(week: WeekData, getPairs:list[str], getTeachers:list[str], timesEnab
         topTextAdd = f" | Приходить к {day[0]+1}-й паре"
 
         if times or timesEnabled:
-            topText += formatTimeInt(week[i+6] if times and len(week[i+6]) == 5 else defaultTimes[i][day[0]], topTextAdd, timesEnabled)
+            topText += formatTimeInt(week[i+6] if times and len(week[i+6]) == 5 else defaultTimes[i][day[0]], topTextAdd, timesEnabled, defaultTimes[i][day[0]])
         else:
             topText += topTextAdd
 
@@ -239,7 +242,7 @@ def toImageDay(week: WeekData, dayId:int, getPairs:list[str], getTeachers:list[s
     dayTextAdd = f" | Приходить к {day[0] + 1}-й паре"
 
     if times or timesEnabled:
-        dayText += formatTimeInt(week[dayId + 6] if times and len(week[dayId + 6]) == 5 else defaultTimes[dayId][day[0]], dayTextAdd, timesEnabled)
+        dayText += formatTimeInt(week[dayId + 6] if times and len(week[dayId + 6]) == 5 else defaultTimes[dayId][day[0]], dayTextAdd, timesEnabled, defaultTimes[dayId][day[0]])
     else:
         dayText += dayTextAdd
 
