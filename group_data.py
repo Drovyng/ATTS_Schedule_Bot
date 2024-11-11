@@ -2,7 +2,7 @@ import json
 from typing import Union
 
 
-PairData = list[int, int, int]
+PairData = list[str, int, str]
 DayData = list[int, PairData, PairData, PairData]
 TimeData = str
 WeekData = list[DayData | TimeData]
