@@ -80,37 +80,10 @@ def get_list_index(value: str, values: list[str], tupo:str) -> int:
 
 
 def pair_str_to_normal(value: PairDataStr, pairs: list[str], teachers: list[str]) -> PairData:
-    result = [-1, -1, -1]
+    
     p, t, c = value
-
+    result = [p, get_list_index(t, teachers, "Преподаватель"), c]
     c = c.lower()
-
-    if p.replace(".", "").replace(",", "").isdigit():
-        result[0] = -1
-    else:
-        result[0] = get_list_index(p, pairs, "Пара")
-    result[1] = get_list_index(t, teachers, "Преподаватель")
-
-    if c == "":
-        result[2] = -1
-    elif c.startswith("с"):
-        result[2] = 0
-    elif c.startswith("б"):
-        result[2] = 1
-    elif c.count("к") > 0 and c.count("м") > 0 and c.index("к")+3 > c.index("м"):
-        result[2] = 27
-    elif c.count("к") > 0 and c.count("с") > 0 and c.index("к")+3 > c.index("с"):
-        result[2] = 28
-    elif c.count("р") > 0 and c.count("ц") > 0 and c.index("р")+3 > c.index("ц"):
-        result[2] = 29
-    elif c.endswith(".0"):
-        lol = int(float(c))
-        if lol < 0:
-            result[2] = -1
-        else:
-            result[2] = lol + 1
-    else:
-        raise ParseDataError(f"Ожидался кабинет, получено: {c}")
 
     return result
 
